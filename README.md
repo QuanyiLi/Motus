@@ -94,11 +94,11 @@ pip install -r requirements.txt
 
 We provide multiple checkpoints for different use cases:
 
-| Model | Use Case | Checkpoint Path |
-|-------|----------|-----------------|
-| **Motus_Wan2_2_5B_pretrain** | Pretrain / VGM Backbone | [`motus-robotics/Motus_Wan2_2_5B_pretrain`](https://huggingface.co/motus-robotics/Motus_Wan2_2_5B_pretrain) |
-| **Motus** |  Fine-Tuning | [`motus-robotics/Motus`](https://huggingface.co/motus-robotics/Motus) |
-| **Motus_robotwin2** | Inference / Fine-Tuning | [`motus-robotics/Motus_robotwin2`](https://huggingface.co/motus-robotics/Motus_robotwin2) |
+| Model | Use Case | Description | Checkpoint Path |
+|-------|----------|-------------|-----------------|
+| **Motus_Wan2_2_5B_pretrain** | Pretrain / VGM Backbone | Stage 1 VGM pretrained checkpoint | [`motus-robotics/Motus_Wan2_2_5B_pretrain`](https://huggingface.co/motus-robotics/Motus_Wan2_2_5B_pretrain) |
+| **Motus** | Fine-Tuning | Stage 2 latent action pretrained checkpoint | [`motus-robotics/Motus`](https://huggingface.co/motus-robotics/Motus) |
+| **Motus_robotwin2** | Inference / Fine-Tuning | Stage 3 RoboTwin2 fine-tuned checkpoint | [`motus-robotics/Motus_robotwin2`](https://huggingface.co/motus-robotics/Motus_robotwin2) |
 
 **Download checkpoints:**
 ```bash
