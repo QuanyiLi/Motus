@@ -83,7 +83,7 @@ conda activate motus
 # Install PyTorch (CUDA 12.1)
 pip install torch==2.2.0 torchvision==0.17.0 --index-url https://download.pytorch.org/whl/cu121
 
-# Install flash-attn (optional but recommended)
+# Install flash-attn
 pip install flash-attn --no-build-isolation
 
 # Install other dependencies
@@ -195,7 +195,7 @@ dataset:
 
 ### 1. RoboTwin 2.0 Simulation
 
-For evaluation on [RoboTwin 2.0](https://github.com/TsinghuaRoboticsLab/RoboTwin) benchmark:
+For evaluation on [RoboTwin 2.0](https://robotwin-platform.github.io/) benchmark:
 
 ```bash
 cd inference/robotwin/Motus
