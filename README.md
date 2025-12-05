@@ -48,8 +48,8 @@
 
 | Component | Base Model | Parameters |
 |-----------|------------|------------|
-| **VGM (Video Generation Model)** | [WAN 2.2](https://github.com/Wan-Video/Wan2.2) | ~5.00B |
-| **VLM (Vision-Language Model)** | [Qwen3-VL-2B](https://huggingface.co/Qwen/Qwen2.5-VL-2B-Instruct) | ~2.13B |
+| **VGM (Video Generation Model)** | [WAN 2.2](https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B) | ~5.00B |
+| **VLM (Vision-Language Model)** | [Qwen3-VL-2B](https://huggingface.co/Qwen/Qwen3-VL-2B-Instruct) | ~2.13B |
 | **Action Expert** | - | ~641.5M |
 | **Understanding Expert** | - | ~253.5M |
 | **Total** | - | **~8B** |
