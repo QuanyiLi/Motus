@@ -73,7 +73,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/motus-robotics/Motus.git
+git clone https://github.com/thu-ml/Motus.git
 cd Motus
 
 # Create conda environment
