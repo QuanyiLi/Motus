@@ -17,6 +17,8 @@
   <br>
   <a href="https://motus-robotics.github.io/assets/motus/png/feishu.jpg"><img alt="Feishu"
     src="https://img.shields.io/badge/Feishu-Motus-blue?logo=lark&logoColor=white"/></a>
+  <a href="https://motus-robotics.github.io/assets/motus/png/wechat.jpg"><img alt="WeChat"
+    src="https://img.shields.io/badge/WeChat-Motus-green?logo=wechat&logoColor=white"/></a>
   <a href="LICENSE"><img alt="License"
     src="https://img.shields.io/badge/License-Apache--2.0-f5de53?logo=apache&color=f5de53"/></a>
 </div>
