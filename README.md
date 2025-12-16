@@ -13,7 +13,7 @@
   <a href="https://huggingface.co/motus-robotics"><img alt="Hugging Face"
     src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-motus--robotics-ffc107?color=ffc107&logoColor=white"/></a>
   <a href="https://arxiv.org/abs/2512.13030"><img alt="arXiv"
-    src="https://img.shields.io/badge/arXiv-2507.23523-b31b1b?logo=arxiv&logoColor=white"/></a>
+    src="https://img.shields.io/badge/arXiv-2512.13030-b31b1b?logo=arxiv&logoColor=white"/></a>
   <br>
   <a href="https://motus-robotics.github.io/assets/motus/png/feishu.jpg"><img alt="Feishu"
     src="https://img.shields.io/badge/Feishu-Motus-blue?logo=lark&logoColor=white"/></a>
@@ -56,7 +56,7 @@
 | **Understanding Expert** | - | ~253.5M |
 | **Total** | - | **~8B** |
 
-**Key Results (RoboTwin 2.0 Simulation):**
+**Key Results (RoboTwin 2.0 Simulation. With 50 clean and 500 randomized data entries per task, we merge the data from all 50 tasks for multi-task training.):**
 - **87.02%** average success rate (+15% over X-VLA, +45% over π₀.₅)
 
 ## Updates
