@@ -50,13 +50,13 @@
 
 | Component | Base Model | Parameters |
 |-----------|------------|------------|
-| **VGM (Video Generation Model)** | [WAN 2.2](https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B) | ~5.00B |
+| **VGM (Video Generation Model)** | [Wan2.2-5B](https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B) | ~5.00B |
 | **VLM (Vision-Language Model)** | [Qwen3-VL-2B](https://huggingface.co/Qwen/Qwen3-VL-2B-Instruct) | ~2.13B |
 | **Action Expert** | - | ~641.5M |
 | **Understanding Expert** | - | ~253.5M |
 | **Total** | - | **~8B** |
 
-**Key Results (RoboTwin 2.0 Simulation. With 50 clean and 500 randomized data entries per task, we merge the data from all 50 tasks for multi-task training.):**
+**Key Results (RoboTwin 2.0 Simulation.** With 50 clean and 500 randomized data entries per task, we merge the data from all 50 tasks for multi-task training.):
 - **87.02%** average success rate (+15% over X-VLA, +45% over π₀.₅)
 
 ## Updates
@@ -259,6 +259,10 @@ Motus follows a **three-stage training pipeline**:
 | **Stage 2 (Motus Pretraining)** | Level 2: Egocentric Human Videos<br>Level 3: Synthetic Data<br>Level 4: Task-agnostic Data<br>Level 5: Multi-Robot Task Trajectory | Motus (all 3 experts, with **latent actions**) |
 | **Stage 3 (Motus SFT)** | Level 6: Target-Robot Task Trajectory | Motus (all 3 experts, with actions) |
 
+The six-layer data pyramid is shown in the figure here:
+
+<img width="615" height="455" alt="image" src="https://github.com/user-attachments/assets/b1389887-2f6b-4e82-87f9-08f0525301b5" />
+
 ### 1. Fine-Tuning from Pretrained Checkpoint (Stage 3)
 
 To fine-tune Motus on your own robot data:
@@ -360,7 +364,7 @@ bash scripts/run_local.sh
 ```
 
 This will load:
-- WAN 2.2 pretrained weights from `model.wan.checkpoint_path`
+- Wan2.2-5B pretrained weights from `model.wan.checkpoint_path`
 - Qwen3-VL pretrained weights from `model.vlm.checkpoint_path`
 
 ## Troubleshooting
@@ -376,6 +380,7 @@ We will collect common issues and their solutions here. If you encounter an issu
 | NCCL timeout | Network issues | Check NCCL environment variables in scripts |
 
 ## Citation
+If you find our work helpful, please cite us:
 
 ```bibtex
 @misc{bi2025motusunifiedlatentaction,
@@ -388,3 +393,6 @@ We will collect common issues and their solutions here. If you encounter an issu
       url={https://arxiv.org/abs/2512.13030}, 
 }
 ```
+
+Thank you!
+
