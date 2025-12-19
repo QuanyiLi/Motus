@@ -8,4 +8,3 @@ instruction_type: unseen
 
 # LAWM Parameters
 model_config: robotwin.yml
-wan_path: /share/home/bhz/pretrained_models/

@@ -82,8 +82,8 @@ cd Motus
 conda create -n motus python=3.10 -y
 conda activate motus
 
-# Install PyTorch (CUDA 12.1)
-pip install torch==2.2.0 torchvision==0.17.0 --index-url https://download.pytorch.org/whl/cu121
+# Install PyTorch (torch>=2.4.0, torchvision>=0.19.0, CUDA>=12.6)
+pip install torch==2.4.0 torchvision==0.19.0 --index-url https://download.pytorch.org/whl/cu126
 
 # Install flash-attn
 pip install flash-attn --no-build-isolation
@@ -112,18 +112,21 @@ huggingface-cli download motus-robotics/Motus_Wan2_2_5B_pretrain --local-dir ./p
 huggingface-cli download motus-robotics/Motus --local-dir ./pretrained_models/Motus
 huggingface-cli download motus-robotics/Motus_robotwin2 --local-dir ./pretrained_models/Motus_robotwin2
 
-# (Optional) Download foundation models for Stage 1/2 training from scratch
+# Download foundation models
 huggingface-cli download Qwen/Qwen3-VL-2B-Instruct --local-dir ./pretrained_models/Qwen3-VL-2B-Instruct
 huggingface-cli download Wan-AI/Wan2.2-TI2V-5B --local-dir ./pretrained_models/Wan2.2-TI2V-5B
 ```
 
-**Update config paths** in `configs/robotwin.yaml`:
+**Update config paths** in your embodiment-specific config file (e.g., `configs/robotwin.yaml`, `configs/ac_one.yaml`, or other embodiment configs):
 ```yaml
 model:
   wan:
     checkpoint_path: "./pretrained_models/Motus_Wan2_2_5B_pretrain"
     config_path: "./pretrained_models/Motus_Wan2_2_5B_pretrain"
     vae_path: "./pretrained_models/Wan2.2-TI2V-5B/Wan2.2_VAE.pth"
+  vlm:
+    checkpoint_path: "./pretrained_models/Qwen3-VL-2B-Instruct"
+    config_path: "./pretrained_models/Qwen3-VL-2B-Instruct"
 ```
 
 ## Data Format
@@ -203,7 +206,7 @@ For evaluation on [RoboTwin 2.0](https://robotwin-platform.github.io/) benchmark
 cd inference/robotwin/Motus
 
 # Single task evaluation
-bash eval.sh <task_name> <checkpoint_path>
+bash eval.sh <task_name>
 
 # Multi-task batch evaluation
 bash auto_eval.sh

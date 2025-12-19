@@ -31,13 +31,13 @@ logger = logging.getLogger(__name__)
 class MotusConfig:
     """Configuration for Motus."""
     # Video model settings
-    wan_checkpoint_path: str = "/share/home/bhz/pretrained_models/Wan2.2-TI2V-5B"
-    vae_path: str = "/share/home/bhz/pretrained_models/Wan2.2-TI2V-5B/Wan2.2_VAE.pth"
-    wan_config_path: str = "/share/home/bhz/pretrained_models/Wan2.2-TI2V-5B"
+    wan_checkpoint_path: str = ""
+    vae_path: str = ""
+    wan_config_path: str = ""
     video_precision: str = "bfloat16"
 
     # VLM settings
-    vlm_checkpoint_path: str = "/share/home/bhz/pretrained_models/Qwen3-VL-2B-Instruct"
+    vlm_checkpoint_path: str = ""
     
     # Understanding Expert settings - configurable from yaml
     und_expert_hidden_size: int = 512        # Understanding expert hidden dimension

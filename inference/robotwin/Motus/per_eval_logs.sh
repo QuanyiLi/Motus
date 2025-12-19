@@ -1,91 +1,163 @@
 #!/bin/bash
+# Parse evaluation logs and display task scores
 
-# Directory containing the log files
+# ============================================================================
+# Configuration - UPDATE THIS PATH TO YOUR LOGS DIRECTORY
+# ============================================================================
+# Path to the logs directory you want to parse
+# Log directory is created by auto_eval.sh as: policy/Motus/logs_YYYYMMDD_HHMMSS
+LOG_DIR="..."
 
-# NOTE: Change to your own log directory as needed
-log_dir="/share/home/bhz/test/RoboTwin/logs_robotwin_stage4_pretrain_5e5_1113_40k"
+# ============================================================================
+# Script starts here - No need to modify below
+# ============================================================================
 
-if [ ! -d "$log_dir" ]; then
-    echo "Log directory not found: $log_dir"
+if [ -z "$LOG_DIR" ]; then
+    echo "Error: LOG_DIR is not set."
+    echo ""
+    echo "Please edit this script and set LOG_DIR variable at the top."
+    echo ""
+    echo "Available log directories:"
+    find "$(dirname "$0")" -maxdepth 1 -type d -name "logs_*" 2>/dev/null | sort -r | head -5
     exit 1
 fi
 
-echo "Parsing evaluation logs from: $log_dir"
-echo "--------------------------------------------------"
-echo "Task                               | Success Rate (%)"
-echo "-----------------------------------|------------------"
+if [ ! -d "$LOG_DIR" ]; then
+    echo "Error: Log directory not found: $LOG_DIR"
+    exit 1
+fi
 
-total_success_rate=0
+echo "================================================================"
+echo "Parsing Evaluation Results"
+echo "================================================================"
+echo "Log Directory: $LOG_DIR"
+echo ""
+
+# Initialize counters
+success_count=0
+failed_count=0
+total_score=0
 task_count=0
-total_tasks_processed=0
-total_successful_tasks=0
-total_failed_tasks=0
-error_count=0
-not_found_count=0
 
-# Find all log files, sorting them for consistent output
-log_files=($(find "$log_dir" -name "*.log" | sort))
+# Arrays to store results
+declare -A task_scores
+declare -a task_names
 
-if [ ${#log_files[@]} -eq 0 ]; then
-    echo "No log files with pattern '*.log' found in $log_dir"
-    exit 1
-fi
-
-for file in "${log_files[@]}"; do
-    # Extract success rate from the last 10 lines of the file. This is efficient for large files.
-    # We take the last matching line, as that should be the final one (e.g., out of 100)
-    success_line=$(tail -n 10 "$file" | grep "Success rate:" | tail -n 1)
+# Parse each log file
+for log_file in "$LOG_DIR"/*.log; do
+    if [ ! -f "$log_file" ]; then
+        continue
+    fi
     
-    if [ -n "$success_line" ]; then
-        # Use grep with Perl-compatible regex (-P) to extract the floating point number followed by a %
-        # Then remove the trailing '%'
-        success_percentage=$(echo "$success_line" | grep -oP '(\d+\.\d+)%' | sed 's/%//')
-
-        if [[ "$success_percentage" =~ ^[0-9.]+$ ]]; then
-            # Convert percentage to a decimal for calculation
-            success_rate=$(echo "scale=6; $success_percentage / 100" | bc)
-            
-            # Extract task name from filename, e.g., "beat_block_hammer.log" -> "beat_block_hammer"
-            filename=$(basename "$file")
-            task_name=$(echo "$filename" | sed 's/\.log$//')
-            
-            # Print in a formatted table
-            printf "%-35s| %.2f%%\n" "$task_name" "$success_percentage"
-            
-            # Accumulate for average calculation using bc for floating point math
-            total_success_rate=$(echo "scale=6; $total_success_rate + $success_rate" | bc)
-            task_count=$((task_count + 1))
-            
-            # Count successful and failed tasks based on success rate
-            if (( $(echo "$success_percentage > 0" | bc -l) )); then
-                total_successful_tasks=$((total_successful_tasks + 1))
-            else
-                total_failed_tasks=$((total_failed_tasks + 1))
-            fi
-            total_tasks_processed=$((total_tasks_processed + 1))
-        else
-            filename=$(basename "$file")
-            task_name=$(echo "$filename" | sed 's/\.log$//')
-            printf "%-35s| Error parsing value\n" "$task_name"
-            error_count=$((error_count + 1))
+    task_name=$(basename "$log_file" .log)
+    task_names+=("$task_name")
+    
+    # Try to extract success rate or score from log
+    # Common patterns: "Success Rate: XX%", "Score: X.XX", "success_rate: X.XX"
+    score=""
+    
+    # Pattern 1: Success Rate: XX%
+    if grep -q "Success Rate:" "$log_file" 2>/dev/null; then
+        score=$(grep "Success Rate:" "$log_file" | tail -1 | grep -oP '\d+\.?\d*(?=%)')
+    # Pattern 2: success_rate: X.XX
+    elif grep -q "success_rate:" "$log_file" 2>/dev/null; then
+        score=$(grep "success_rate:" "$log_file" | tail -1 | grep -oP '\d+\.?\d*' | head -1)
+        # Convert to percentage if it's 0-1 range
+        if [ -n "$score" ]; then
+            score=$(awk "BEGIN {printf \"%.1f\", $score * 100}")
         fi
+    # Pattern 3: Check for success/failure markers
+    elif grep -q "completed successfully" "$log_file" 2>/dev/null || \
+         grep -q "Episode.*completed" "$log_file" 2>/dev/null; then
+        score="100.0"
+    elif grep -q "failed with exit code\|Error:\|Traceback" "$log_file" 2>/dev/null; then
+        score="0.0"
     else
-        filename=$(basename "$file")
-        task_name=$(echo "$filename" | sed 's/\.log$//')
-        printf "%-35s| Not found\n" "$task_name"
-        not_found_count=$((not_found_count + 1))
+        score="N/A"
+    fi
+    
+    task_scores["$task_name"]="$score"
+    
+    # Count success/failure
+    if [ "$score" != "N/A" ]; then
+        ((task_count++))
+        score_num=$(echo "$score" | sed 's/[^0-9.]//g')
+        if [ -n "$score_num" ]; then
+            total_score=$(awk "BEGIN {printf \"%.2f\", $total_score + $score_num}")
+            if (( $(echo "$score_num >= 50.0" | bc -l) )); then
+                ((success_count++))
+            else
+                ((failed_count++))
+            fi
+        fi
     fi
 done
 
-echo "--------------------------------------------------"
+# Display results
+echo "Task Results:"
+echo "----------------------------------------------------------------"
+printf "%-30s %10s\n" "Task Name" "Score"
+echo "----------------------------------------------------------------"
 
-if [ "$task_count" -gt 0 ]; then
-    # Calculate and print the average success rate as a percentage
-    average_percentage=$(echo "scale=4; ($total_success_rate / $task_count) * 100" | bc)
-    # Round to 2 decimal places using printf
-    average_percentage=$(printf "%.2f" "$average_percentage")
-    echo "Processed $task_count tasks."
-    printf "Average Success Rate: %s%%\n" "$average_percentage"
+for task_name in "${task_names[@]}"; do
+    score="${task_scores[$task_name]}"
+    
+    # Color output based on score
+    if [ "$score" = "N/A" ]; then
+        printf "%-30s %10s\n" "$task_name" "N/A"
+    else
+        score_num=$(echo "$score" | sed 's/[^0-9.]//g')
+        if (( $(echo "$score_num >= 80.0" | bc -l) )); then
+            # Green for >= 80%
+            printf "%-30s \033[32m%10.1f\033[0m%%\n" "$task_name" "$score_num"
+        elif (( $(echo "$score_num >= 50.0" | bc -l) )); then
+            # Yellow for >= 50%
+            printf "%-30s \033[33m%10.1f\033[0m%%\n" "$task_name" "$score_num"
+        else
+            # Red for < 50%
+            printf "%-30s \033[31m%10.1f\033[0m%%\n" "$task_name" "$score_num"
+        fi
+    fi
+done
+
+echo "----------------------------------------------------------------"
+
+# Calculate average
+if [ $task_count -gt 0 ]; then
+    avg_score=$(awk "BEGIN {printf \"%.1f\", $total_score / $task_count}")
 else
-    echo "Could not find success rate in any log file."
+    avg_score="0.0"
 fi
+
+# Display summary
+echo ""
+echo "Summary Statistics:"
+echo "----------------------------------------------------------------"
+echo "Total Tasks:       $task_count"
+echo "Success (>=50pct): $success_count"
+echo "Failed (<50pct):   $failed_count"
+echo "Average Score:     ${avg_score}%"
+echo "================================================================"
+
+# Create failed tasks file for re-run
+failed_tasks_file="${LOG_DIR}/failed_tasks.txt"
+> "$failed_tasks_file"
+
+for task_name in "${task_names[@]}"; do
+    score="${task_scores[$task_name]}"
+    if [ "$score" != "N/A" ]; then
+        score_num=$(echo "$score" | sed 's/[^0-9.]//g')
+        if (( $(echo "$score_num < 50.0" | bc -l) )); then
+            echo "$task_name" >> "$failed_tasks_file"
+        fi
+    fi
+done
+
+failed_count_file=$(wc -l < "$failed_tasks_file")
+if [ $failed_count_file -gt 0 ]; then
+    echo ""
+    echo "Failed tasks saved to: $failed_tasks_file"
+    echo "To re-run, copy to policy/Motus/ and set TASKS_FILE=\"failed_tasks.txt\""
+fi
+
+exit 0
