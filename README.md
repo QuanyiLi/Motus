@@ -82,14 +82,10 @@ cd Motus
 conda create -n motus python=3.10 -y
 conda activate motus
 
-# Install PyTorch (torch>=2.4.0, torchvision>=0.19.0, CUDA>=12.6)
-pip install torch==2.4.0 torchvision==0.19.0 --index-url https://download.pytorch.org/whl/cu126
-
-# Install flash-attn
-pip install flash-attn --no-build-isolation
-
 # Install other dependencies
 pip install -r requirements.txt
+
+pip install flash-attn --no-build-isolation
 ```
 
 ## Model Checkpoints
