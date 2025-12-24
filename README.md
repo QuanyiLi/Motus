@@ -62,6 +62,12 @@
 ## Updates
 
 - [2025-12] Initial release of Motus with pretrained checkpoints and training code.
+- [x] **Simple RoboTwin inference**
+- [x] **LeRobot dataset format support**  
+- [x] **Optimized training scripts**
+- [ ] **RoboTwin raw dataset conversion**
+
+We welcome community members to help maintain and extend Motus. Welcome to join the Motus community and contribute together!
 
 ## Requirements
 
@@ -82,10 +88,18 @@ cd Motus
 conda create -n motus python=3.10 -y
 conda activate motus
 
-# Install other dependencies
+# install torch (cuda12.8)
+pip install torch==2.7.1 torchvision==0.22.1 --index-url https://download.pytorch.org/whl/cu128
+
+# install flash 
+pip install flash-attn --no-build-isolation
+
+# Install motus dependencies
 pip install -r requirements.txt
 
-pip install flash-attn --no-build-isolation
+# (Optinal) Install lerobot dependencies
+pip install --no-deps lerobot==0.3.2
+pip install -r requirements/lerobot.txt
 ```
 
 ## Model Checkpoints
@@ -264,7 +278,46 @@ The six-layer data pyramid is shown in the figure here:
 
 ### 1. Fine-Tuning from Pretrained Checkpoint (Stage 3)
 
-To fine-tune Motus on your own robot data:
+Currently, we support the following training methods:
+
+- **Single-node training** with torchrun + DeepSpeed
+- **Multi-node training** on SLURM clusters
+- **Resume training** from checkpoints
+
+Since Motus is based on proven architectures, you are free to apply other techniques (e.g., FSDP, quantization) by following standard distributed training practices. We provide example training scripts for different scenarios, which you can directly use to kick off your own training.
+
+To provide a better understanding, we elaborate the line-by-line explanation of the basic training script (`scripts/train.sh`) with our example configuration:
+
+```bash
+#!/bin/bash
+# Define your env settings here 
+# e.g., nccl, network, proxy, etc.
+
+TASK="robotwin"  # Define your task name here
+CONFIG_FILE="configs/robotwin.yaml"  # Define your dataset config path here
+
+export OUTPUT_DIR="outputs/motus-${TASK}" # Define your output directory here
+
+if [ ! -d "$OUTPUT_DIR" ]; then
+    mkdir -p "$OUTPUT_DIR"
+    echo "Folder '$OUTPUT_DIR' created"
+else
+    echo "Folder '$OUTPUT_DIR' already exists"
+fi
+
+# Single-node training with torchrun
+torchrun \
+    --nnodes=1 \
+    --nproc_per_node=8 \
+    --node_rank=0 \
+    --master_addr=127.0.0.1 \
+    --master_port=29500 \
+    train/train.py \
+    --deepspeed configs/zero1.json \  # DeepSpeed config file, you can modify it to your own using other sharding strategies
+    --config $CONFIG_FILE \
+    --run_name $TASK \
+    --report_to tensorboard
+```
 
 **Step 1:** Set the pretrain checkpoint path in your config (e.g., `configs/robotwin.yaml`):
 ```yaml
@@ -274,11 +327,15 @@ finetune:
 
 **Step 2:** Run training using one of the following methods:
 
-**Option A: Using shell script with tmux (recommended for long-running jobs)**
-
-SSH into your machine and start a tmux session for background training:
+**Option A: Basic single-node training (recommended for getting started)**
 ```bash
-# Start a new tmux session
+bash scripts/train.sh
+```
+
+**Option B: Advanced local training with environment management**
+```bash
+# Using shell script with tmux (recommended for long-running jobs)
+# SSH into your machine and start a tmux session for background training
 tmux new -s motus_train
 
 # Set environment variables and run training
@@ -291,41 +348,13 @@ bash scripts/run_local.sh
 # Re-attach later: tmux attach -t motus_train
 ```
 
-**Option B: Using SLURM**
+**Option C: SLURM cluster training**
 ```bash
 # Single node with SLURM
-sbatch scripts/slurm_single_node.sh
+sbatch scripts/slurm/slurm_single_node.sh
 
 # Multi-node with SLURM
-sbatch scripts/slurm_multi_node.sh
-```
-
-**Option C: Direct command (multi-GPU with torchrun + DeepSpeed)**
-```bash
-torchrun \
-  --nnodes=1 \
-  --nproc_per_node=8 \
-  --master_port=29500 \
-  train/train.py \
-  --deepspeed configs/zero1.json \
-  --config configs/robotwin.yaml \
-  --run_name motus_finetune \
-  --report_to tensorboard
-```
-
-To provide a better understanding, here is an explanation of key parameters in [`scripts/run_local.sh`](scripts/run_local.sh):
-
-```bash
-# Environment setup
-export CONFIG_FILE="configs/robotwin.yaml"   # Config file path
-export RUN_NAME="robotwin"                   # Experiment name for logging
-export GPU_IDS="0,1,2,3,4,5,6,7"            # GPUs to use (comma-separated)
-
-# The script automatically:
-# - Validates GPU availability
-# - Sets NCCL environment variables for multi-GPU
-# - Chooses single-GPU or DeepSpeed based on GPU count
-# - Logs to logs/local_${RUN_NAME}_*.log
+sbatch scripts/slurm/slurm_multi_node.sh
 ```
 
 ### 2. Resume Training
@@ -340,7 +369,14 @@ resume:
 
 **Step 2:** Run training (same commands as above):
 ```bash
+# Basic resume training
+bash scripts/train.sh
+
+# Or with environment management
 bash scripts/run_local.sh
+
+# Or on SLURM cluster
+sbatch scripts/slurm/slurm_multi_node.sh
 ```
 
 > **Note:** When resuming or fine-tuning, WAN and VLM pretrained weights are **not reloaded** (only VAE is needed). This prevents overwriting fine-tuned weights.
@@ -359,12 +395,24 @@ finetune:
 
 **Step 2:** Run training:
 ```bash
+# Basic training from scratch
+bash scripts/train.sh
+
+# Or with advanced options
 bash scripts/run_local.sh
+
+# Or on SLURM cluster for large-scale training
+sbatch scripts/slurm/slurm_multi_node.sh
 ```
 
 This will load:
 - Wan2.2-5B pretrained weights from `model.wan.checkpoint_path`
 - Qwen3-VL pretrained weights from `model.vlm.checkpoint_path`
+
+**Training Scripts Overview:**
+- `scripts/train.sh` - Basic single-node training script (recommended for getting started)
+- `scripts/run_local.sh` - Advanced local training with environment management 
+- `scripts/slurm/` - SLURM cluster scripts for single-node and multi-node distributed training
 
 ## Troubleshooting
 

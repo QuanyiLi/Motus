@@ -68,7 +68,7 @@ def load_config(config_path: str) -> OmegaConf:
     # Validate dataset configuration
     dataset_config = {
         'dataset_type': config.dataset.type,
-        'dataset_dir': config.dataset.dataset_dir,
+        'dataset_dir': config.dataset.dataset_dir if hasattr(config.dataset, 'dataset_dir') else None,
         'global_downsample_rate': config.common.global_downsample_rate,
         'video_action_freq_ratio': config.common.video_action_freq_ratio,
         'num_video_frames': config.common.num_video_frames

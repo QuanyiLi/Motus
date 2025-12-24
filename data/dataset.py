@@ -184,6 +184,45 @@ def create_dataset(config: OmegaConf, val: bool = False):
         
         return AlohaAgilex2Dataset(**params)
 
+    elif dataset_type == 'lerobot':
+        from .lerobot.lerobot_dataset import LeRobotMotusDataset
+
+        # Get all parameters from config
+        params = {}
+
+        # Add common parameters
+        if hasattr(config, 'common'):
+            params.update({
+                'global_downsample_rate': config.common.global_downsample_rate,
+                'video_action_freq_ratio': config.common.video_action_freq_ratio,
+                'num_video_frames': config.common.num_video_frames,
+                'video_size': (config.common.video_height, config.common.video_width),
+            })
+
+        # Add dataset-specific parameters
+        if hasattr(config.dataset, 'dataset_dir'):
+            params['dataset_dir'] = config.dataset.dataset_dir
+        if hasattr(config.dataset, 'split'):
+            params['split'] = config.dataset.split
+        if hasattr(config.dataset, 'max_episodes'):
+            params['max_episodes'] = config.dataset.max_episodes
+        if hasattr(config.dataset, 'image_aug'):
+            params['image_aug'] = config.dataset.image_aug and not val
+
+        # Add VLM checkpoint path
+        if hasattr(config.model, 'vlm') and hasattr(config.model.vlm, 'checkpoint_path'):
+            params['vlm_checkpoint_path'] = config.model.vlm.checkpoint_path
+
+        # Add any additional parameters from dataset.params
+        if hasattr(config.dataset, 'params'):
+            additional_params = OmegaConf.to_object(config.dataset.params)
+            params.update(additional_params)
+
+        # Set validation flag
+        params['val'] = val
+        
+        return LeRobotMotusDataset(**params)
+
     # Example: Add more dataset types here
     # elif dataset_type == 'bridge':
     #     from .bridge_dataset import BridgeDataset  

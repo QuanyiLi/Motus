@@ -101,7 +101,7 @@ model:
 # Training configuration
 training:
   # Optimization settings
-  batch_size: 16
+  batch_size: 8
   max_steps: 1000000
   learning_rate: 5.0e-5
   # Optional: separate learning rate for WAN (video model). If omitted, falls back to learning_rate
@@ -160,4 +160,4 @@ resume:
   
 # Finetune settings 
 finetune:
-  checkpoint_path: /share/home/bhz/test/latent_action_world_model/lawm/checkpoints/latent_action/stage2_1107/checkpoint_step_420000
+  checkpoint_path: null  # (directory containing mp_rank_00_model_states.pt)
