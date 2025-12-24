@@ -61,7 +61,7 @@
 
 ## Updates
 
-- [2025-12] Initial release of Motus with pretrained checkpoints and training code.
+- [2025-12] **Initial release of Motus with pretrained checkpoints and training code.**
 - [x] **Simple RoboTwin inference**
 - [x] **LeRobot dataset format support**  
 - [x] **Optimized training scripts**
