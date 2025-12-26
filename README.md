@@ -31,16 +31,8 @@
 - [Installation](#installation)
 - [Model Checkpoints](#model-checkpoints)
 - [Data Format](#data-format)
-  - [1. RoboTwin 2.0 (Simulation)](#1-robotwin-20-simulation)
-  - [2. Real-World Robot Data (AC-One, Aloha-Agilex-2)](#2-real-world-robot-data-ac-one-aloha-agilex-2)
-  - [3. Latent Action Pretraining (Stage 2)](#3-latent-action-pretraining-stage-2)
 - [Running Inference](#running-inference)
-  - [1. RoboTwin 2.0 Simulation](#1-robotwin-20-simulation-1)
-  - [2. Real-World Inference (No Environment)](#2-real-world-inference-no-environment)
 - [Training](#training)
-  - [1. Fine-Tuning from Pretrained Checkpoint (Stage 3)](#1-fine-tuning-from-pretrained-checkpoint-stage-3)
-  - [2. Resume Training](#2-resume-training)
-  - [3. Training from Scratch](#3-training-from-scratch)
 - [Troubleshooting](#troubleshooting)
 - [Citation](#citation)
 
@@ -66,7 +58,8 @@
 - [2025-12-24] **LeRobotDataset format support**  
 - [2025-12-24] **Optimized training scripts**
 - [2025-12-26] **MultiLeRobotDataset format support**
-- [ ] **RoboTwin raw dataset conversion**
+- [2025-12-27] **RoboTwin raw dataset conversion**
+- [2025-12-27] **Three-view image concatenation scripts**
 
 We welcome community members to help maintain and extend Motus. Welcome to join the Motus community and contribute together!
 
@@ -74,7 +67,7 @@ We welcome community members to help maintain and extend Motus. Welcome to join 
 
 | Mode | VRAM | Recommended GPU |
 |------|------|-----------------|
-| Inference (with pre-encoded T5) | ~ 24 GB | RTX 5090 |
+| Inference (with pre-encoded T5) | > 24 GB | RTX 5090 |
 | Inference (without pre-encoded T5) | ~ 41 GB | A100 (40GB) / A100 (80GB) / H100 / B200 |
 | Training | > 80 GB | A100 (80GB) / H100 / B200 |
 
@@ -142,125 +135,24 @@ model:
 
 ## Data Format
 
-Motus supports three types of datasets. Each dataset type has its own directory structure:
+Motus supports three types of datasets with specific directory structures for optimal training and inference.
 
-### 1. RoboTwin 2.0 (Simulation)
+**📖 See detailed guide:** [**Data Format Guide**](DATA_FORMAT.md)
 
-```
-/path/to/robotwin2/
-├── clean/
-│   ├── task_name/
-│   │   ├── qpos/           # Robot joint positions (.pt)
-│   │   │   ├── 0.pt
-│   │   │   └── ...
-│   │   ├── videos/         # MP4 video files
-│   │   │   ├── 0.mp4
-│   │   │   └── ...
-│   │   └── umt5_wan/       # Pre-encoded T5 language embeddings (.pt)
-│   │       ├── 0.pt
-│   │       └── ...
-│   └── ...
-└── randomized/
-    └── ... (same structure)
-```
+**Quick Overview:**
+- **RoboTwin 2.0**: Simulation data with clean/randomized splits
+- **Real-World**: AC-One, Aloha-Agilex-2 robot data
 
-### 2. Real-World Robot Data (AC-One, Aloha-Agilex-2)
-
-```
-/path/to/ac_one/
-├── task_category/
-│   ├── task_variant/
-│   │   ├── videos/
-│   │   │   ├── 0.mp4
-│   │   │   └── ...
-│   │   ├── qpos/           # Robot joint positions (.pt)
-│   │   │   ├── 0.pt
-│   │   │   └── ...
-│   │   └── instructions/   # Language instructions
-│   │       ├── task.txt    # Text instruction
-│   │       └── task.pt     # Pre-encoded T5 embedding
-│   └── ...
-└── ...
-```
-
-### 3. Latent Action Pretraining (Stage 2)
-
-```
-/path/to/latent_action_data/
-├── videos/                 # MP4 video files
-│   ├── episode_0.mp4
-│   └── ...
-├── umt5_wan/              # Pre-encoded T5 language embeddings
-│   ├── episode_0.pt
-│   └── ...
-└── latent_action_dim14/   # Latent action labels (from optical flow)
-    ├── episode_0.pt
-    └── ...
-```
-
-**Configure dataset in YAML:**
-```yaml
-dataset:
-  type: robotwin           # Options: robotwin, ac_one, aloha_agilex_2, latent_action
-  dataset_dir: /path/to/dataset
-  data_mode: both          # For robotwin: clean, randomized, or both
-  task_mode: multi         # single or multi
-```
+**Data Conversion Tools:**
+- [RoboTwin Dataset Converter](data/robotwin2/robotwin_data_convert/README.md)
+- [Multi-Camera Concatenation](data/utils/multi_camera_concat.py)
 
 ## Running Inference
 
-### 1. RoboTwin 2.0 Simulation
+**📖 See detailed guide:** [**Inference Guide**](INFERENCE.md)
 
-For evaluation on [RoboTwin 2.0](https://robotwin-platform.github.io/) benchmark:
-
-```bash
-cd inference/robotwin/Motus
-
-# Single task evaluation
-bash eval.sh <task_name>
-
-# Multi-task batch evaluation
-bash auto_eval.sh
-```
-
-### 2. Real-World Inference (No Environment)
-
-We provide a minimal inference script that runs Motus on a single image without any robot environment:
-
-**With pre-encoded T5 embeddings (recommended, ~24GB VRAM):**
-```bash
-# Step 1: Encode instruction to T5 embeddings (do this once)
-python inference/real_world/Motus/encode_t5_instruction.py \
-  --instruction "pick up the cube and place it on the right" \
-  --output t5_embed.pt \
-  --wan_path /path/to/pretrained_models
-
-# Step 2: Run inference with pre-encoded embeddings
-python inference/real_world/Motus/inference_example.py \
-  --model_config inference/real_world/Motus/utils/robotwin.yml \
-  --ckpt_dir ./pretrained_models/Motus_robotwin2 \
-  --wan_path /path/to/pretrained_models \
-  --image /path/to/input_frame.png \
-  --instruction "pick up the cube and place it on the right" \
-  --t5_embeds t5_embed.pt \
-  --output result.png
-```
-
-**Without pre-encoded T5 (encode on-the-fly, ~41GB VRAM):**
-```bash
-python inference/real_world/Motus/inference_example.py \
-  --model_config inference/real_world/Motus/utils/robotwin.yml \
-  --ckpt_dir ./pretrained_models/Motus_robotwin2 \
-  --wan_path /path/to/pretrained_models \
-  --image /path/to/input_frame.png \
-  --instruction "pick up the cube and place it on the right" \
-  --use_t5 \
-  --output result.png
-```
-
-**Output:**
-- `result.png`: Grid of condition frame + predicted future frames
-- Console: Predicted action chunk with shape `(action_chunk_size, action_dim)`
+- **RoboTwin 2.0**: [Evaluation Setup](inference/robotwin/Motus/README.md)
+- **Real-World**: Minimal inference without robot environment
 
 ## Training
 
@@ -277,155 +169,18 @@ The six-layer data pyramid is shown in the figure here:
 
 <img width="615" height="455" alt="image" src="https://github.com/user-attachments/assets/b1389887-2f6b-4e82-87f9-08f0525301b5" />
 
-### 1. Fine-Tuning from Pretrained Checkpoint (Stage 3)
+**📖 See detailed guide:** [**Training Guide**](TRAINING.md)
 
-Currently, we support the following training methods:
-
-- **Single-node training** with torchrun + DeepSpeed
-- **Multi-node training** on SLURM clusters
-- **Resume training** from checkpoints
-
-Since Motus is based on proven architectures, you are free to apply other techniques (e.g., FSDP, quantization) by following standard distributed training practices. We provide example training scripts for different scenarios, which you can directly use to kick off your own training.
-
-To provide a better understanding, we elaborate the line-by-line explanation of the basic training script (`scripts/train.sh`) with our example configuration:
-
-```bash
-#!/bin/bash
-# Define your env settings here 
-# e.g., nccl, network, proxy, etc.
-
-TASK="robotwin"  # Define your task name here
-CONFIG_FILE="configs/robotwin.yaml"  # Define your dataset config path here
-
-export OUTPUT_DIR="outputs/motus-${TASK}" # Define your output directory here
-
-if [ ! -d "$OUTPUT_DIR" ]; then
-    mkdir -p "$OUTPUT_DIR"
-    echo "Folder '$OUTPUT_DIR' created"
-else
-    echo "Folder '$OUTPUT_DIR' already exists"
-fi
-
-# Single-node training with torchrun
-torchrun \
-    --nnodes=1 \
-    --nproc_per_node=8 \
-    --node_rank=0 \
-    --master_addr=127.0.0.1 \
-    --master_port=29500 \
-    train/train.py \
-    --deepspeed configs/zero1.json \  # DeepSpeed config file, you can modify it to your own using other sharding strategies
-    --config $CONFIG_FILE \
-    --run_name $TASK \
-    --report_to tensorboard
-```
-
-**Step 1:** Set the pretrain checkpoint path in your config (e.g., `configs/robotwin.yaml`):
-```yaml
-finetune:
-  checkpoint_path: ./pretrained_models/Motus  # Stage 2 pretrained checkpoint
-```
-
-**Step 2:** Run training using one of the following methods:
-
-**Option A: Basic single-node training (recommended for getting started)**
-```bash
-bash scripts/train.sh
-```
-
-**Option B: Advanced local training with environment management**
-```bash
-# Using shell script with tmux (recommended for long-running jobs)
-# SSH into your machine and start a tmux session for background training
-tmux new -s motus_train
-
-# Set environment variables and run training
-export CONFIG_FILE="configs/robotwin.yaml"
-export RUN_NAME="motus_finetune"
-export GPU_IDS="0,1,2,3,4,5,6,7"
-bash scripts/run_local.sh
-
-# Detach from tmux: Ctrl+B, then D
-# Re-attach later: tmux attach -t motus_train
-```
-
-**Option C: SLURM cluster training**
-```bash
-# Single node with SLURM
-sbatch scripts/slurm/slurm_single_node.sh
-
-# Multi-node with SLURM
-sbatch scripts/slurm/slurm_multi_node.sh
-```
-
-### 2. Resume Training
-
-To resume from an interrupted checkpoint:
-
-**Step 1:** Set the resume checkpoint path in your config:
-```yaml
-resume:
-  checkpoint_path: ./checkpoints/motus_finetune/checkpoint_step_10000
-```
-
-**Step 2:** Run training (same commands as above):
-```bash
-# Basic resume training
-bash scripts/train.sh
-
-# Or with environment management
-bash scripts/run_local.sh
-
-# Or on SLURM cluster
-sbatch scripts/slurm/slurm_multi_node.sh
-```
-
-> **Note:** When resuming or fine-tuning, WAN and VLM pretrained weights are **not reloaded** (only VAE is needed). This prevents overwriting fine-tuned weights.
-
-### 3. Training from Scratch
-
-To train Motus from scratch (load WAN + VLM pretrained weights):
-
-**Step 1:** Ensure `resume.checkpoint_path` and `finetune.checkpoint_path` are both `null` in your config:
-```yaml
-resume:
-  checkpoint_path: null
-finetune:
-  checkpoint_path: null
-```
-
-**Step 2:** Run training:
-```bash
-# Basic training from scratch
-bash scripts/train.sh
-
-# Or with advanced options
-bash scripts/run_local.sh
-
-# Or on SLURM cluster for large-scale training
-sbatch scripts/slurm/slurm_multi_node.sh
-```
-
-This will load:
-- Wan2.2-5B pretrained weights from `model.wan.checkpoint_path`
-- Qwen3-VL pretrained weights from `model.vlm.checkpoint_path`
-
-**Training Scripts Overview:**
-- `scripts/train.sh` - Basic single-node training script (recommended for getting started)
-- `scripts/run_local.sh` - Advanced local training with environment management 
-- `scripts/slurm/` - SLURM cluster scripts for single-node and multi-node distributed training
+**Data Preparation:**
+- [RoboTwin Dataset Converter](data/robotwin2/robotwin_data_convert/README.md)
+- [Multi-Camera Concatenation](data/utils/multi_camera_concat.py)
 
 ## Troubleshooting
 
-We will collect common issues and their solutions here. If you encounter an issue, please check here first. If you can't find a solution, please file an issue on the repo (see [here](CONTRIBUTING.md) for guidelines).
-
-| Issue | Likely Cause | Solution |
-|-------|--------------|----------|
-| OOM during inference (~41GB) | T5 encoder loaded at runtime | Use pre-encoded T5 embeddings (`--t5_embeds`) to reduce to ~24GB |
-| Poor action predictions | Checkpoint mismatch | Ensure using correct config for your checkpoint |
-| Slow training | No flash-attn | Install flash-attention: `pip install flash-attn --no-build-isolation` |
-| WAN/VLM weights not loading | Resume/finetune mode | Set both `resume.checkpoint_path` and `finetune.checkpoint_path` to `null` |
-| NCCL timeout | Network issues | Check NCCL environment variables in scripts |
+**📖 Detailed guides:**
+- [Inference Issues](INFERENCE.md#troubleshooting)
+- [Training Issues](TRAINING.md#troubleshooting)
+- [Data Format Issues](DATA_FORMAT.md)
 
 ## Citation
 If you find our work helpful, please cite us:
