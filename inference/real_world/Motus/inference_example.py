@@ -23,7 +23,7 @@ from transformers import AutoProcessor
 from wan.modules.t5 import T5EncoderModel
 
 # Load config
-with open("inference/real_world/Motus/utils/robotwin.yml", "r") as f:
+with open("inference/real_world/Motus/utils/aloha_agilex_2.yml", "r") as f:
     config = yaml.safe_load(f)
 
 # Create model
@@ -201,7 +201,7 @@ def load_checkpoint_into_model(model: Motus, ckpt_path: str) -> None:
 
 def main():
     parser = argparse.ArgumentParser(description="Real-World Motus inference sample (no env)")
-    parser.add_argument("--model_config", required=True, help="Path to real-world YAML (e.g., inference/real_world/Motus/utils/robotwin.yml)")
+    parser.add_argument("--model_config", required=True, help="Path to real-world YAML (e.g., inference/real_world/Motus/utils/aloha_agilex_2.yml)")
     parser.add_argument("--ckpt_dir", required=True, help="Path to checkpoint directory (contains mp_rank_00_model_states.pt or state dir)")
     parser.add_argument("--wan_path", required=True, help="Base path to WAN models (to find T5 and VAE)")
     parser.add_argument("--image", required=True, help="Path to input image")
