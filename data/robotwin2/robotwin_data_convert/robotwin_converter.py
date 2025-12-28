@@ -46,10 +46,13 @@ class T5EmbeddingProcessor:
     def _init_encoder(self):
         """Initialize T5 encoder (called in subprocess)"""
         if self._encoder is None:
-            # Add WAN module path
-            wan_module_path = '/share/home/bhz/workspace/cosmos-predict2/Wan2.2'
+            # Add WAN module path (relative to this file)
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            wan_module_path = os.path.join(script_dir, '..', '..', '..', 'bak')
+            wan_module_path = os.path.abspath(wan_module_path)
+            
             if wan_module_path not in sys.path:
-                sys.path.append(wan_module_path)
+                sys.path.insert(0, wan_module_path)
             
             try:
                 from wan.modules.t5 import T5EncoderModel
