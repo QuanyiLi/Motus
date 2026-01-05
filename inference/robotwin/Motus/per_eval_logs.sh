@@ -53,23 +53,28 @@ for log_file in "$LOG_DIR"/*.log; do
     task_names+=("$task_name")
     
     # Try to extract success rate or score from log
-    # Common patterns: "Success Rate: XX%", "Score: X.XX", "success_rate: X.XX"
+    # Common patterns: "Success rate: XX/YY => XX.X%", "Success Rate: XX%", "success_rate: X.XX"
     score=""
     
-    # Pattern 1: Success Rate: XX%
-    if grep -q "Success Rate:" "$log_file" 2>/dev/null; then
-        score=$(grep "Success Rate:" "$log_file" | tail -1 | grep -oP '\d+\.?\d*(?=%)')
-    # Pattern 2: success_rate: X.XX
+    # Pattern 1: Success rate: XX/YY => XX.X% (with ANSI color codes)
+    # Extract the percentage after "=>" from the last occurrence
+    if grep -qi "Success rate:" "$log_file" 2>/dev/null; then
+        # Get the last line with "Success rate:", remove ANSI codes, extract percentage
+        last_line=$(grep -i "Success rate:" "$log_file" | tail -1 | sed 's/\x1b\[[0-9;]*m//g')
+        # Extract percentage value after "=>" (e.g., "95.0%" or "95%")
+        score=$(echo "$last_line" | grep -oP '=>\s*\K\d+\.?\d*(?=%)' | tail -1)
+        if [ -z "$score" ]; then
+            # Fallback: try to extract any percentage value on that line
+            score=$(echo "$last_line" | grep -oP '\d+\.?\d*(?=%)' | tail -1)
+        fi
+    # Pattern 2: success_rate: X.XX (0-1 range)
     elif grep -q "success_rate:" "$log_file" 2>/dev/null; then
         score=$(grep "success_rate:" "$log_file" | tail -1 | grep -oP '\d+\.?\d*' | head -1)
         # Convert to percentage if it's 0-1 range
         if [ -n "$score" ]; then
             score=$(awk "BEGIN {printf \"%.1f\", $score * 100}")
         fi
-    # Pattern 3: Check for success/failure markers
-    elif grep -q "completed successfully" "$log_file" 2>/dev/null || \
-         grep -q "Episode.*completed" "$log_file" 2>/dev/null; then
-        score="100.0"
+    # Pattern 3: Check for failure markers (only if no success rate found)
     elif grep -q "failed with exit code\|Error:\|Traceback" "$log_file" 2>/dev/null; then
         score="0.0"
     else
