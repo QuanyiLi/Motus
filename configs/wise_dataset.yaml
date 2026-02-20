@@ -29,7 +29,7 @@ dataset:
   params:
     # Required: LeRobotMotusDataset needs repo_id + root to locate the local dataset
     repo_id: "wise_dataset_merged"
-    root: "/work/vita/lanfeng/vlas/wise_dataset/merged_dataset"
+    root: "/work/vita/lanfeng/vlas/vla/wise_dataset/merged_dataset"
 
     # Embodiment type for loading normalization statistics (e.g., "aloha_agilex_2", "ac_one")
     embodiment_type: "wise_bot"
