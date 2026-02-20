@@ -116,7 +116,7 @@ system:
   val_interval: 500     # Validate every N steps
   
   # Hardware settings
-  num_workers: 16         # Number of dataloader workers (0 = main process only, 4-8 recommended for speed)
+  num_workers: 8         # Number of dataloader workers (0 = main process only, 4-8 recommended for speed)
   pin_memory: true       # Pin memory for faster GPU transfer
 
 # Profiler settings (for performance analysis, especially dataset loading)
