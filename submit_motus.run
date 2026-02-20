@@ -15,7 +15,6 @@ export MASTER_PORT=29500
 
 # Directory paths on remote server
 MOTUS_DIR="/work/vita/lanfeng/vlas/Motus"
-DATA_ROOT="/work/vita/lanfeng/vlas/vla/wise_dataset/merged_train"
 CONFIG_FILE="configs/wise_dataset.yaml"
 
 # Important: set CUDA_HOME and add Conda's nvcc to PATH if installed via conda
