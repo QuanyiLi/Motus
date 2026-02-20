@@ -665,7 +665,8 @@ def main():
         
         # Create dataloaders
         logger.info("Creating dataloaders...")
-        train_dataloader, val_dataloader = create_dataloaders(config, rank, world_size)
+        with accelerator.main_process_first():
+            train_dataloader, val_dataloader = create_dataloaders(config, rank, world_size)
         
         # Create custom saving hook to avoid NCCL timeout issues
         def save_model_hook(models, weights, output_dir):
