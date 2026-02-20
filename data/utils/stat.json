@@ -154,5 +154,18 @@
         "action_dim": 14,
         "processing_time_seconds": 9.20476245880127,
         "num_processes_used": 16
+    },
+    "wise_bot": {
+        "min": [
+            -1.0
+        ],
+        "max": [
+            1.0
+        ],
+        "file_count": 1728,
+        "total_files_scanned": 1728,
+        "action_dim": 8,
+        "processing_time_seconds": 0.0,
+        "num_processes_used": 1
     }
 }
