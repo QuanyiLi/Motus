@@ -5,7 +5,7 @@ import sys
 root_dir = "/work/vita/lanfeng/vlas/vla/wise_dataset_0.3.2"
 wan_path = "/work/vita/lanfeng/vlas/Motus/pretrained_models"
 
-script_path = "/home/quanyi/code/Motus/data/lerobot/add_t5_cache_to_lerobot_dataset.py"
+script_path = "/work/vita/lanfeng/vlas/Motus/data/lerobot/add_t5_cache_to_lerobot_dataset.py"
 
 for dirpath, dirnames, filenames in os.walk(root_dir):
     meta_dir = os.path.join(dirpath, "meta")
