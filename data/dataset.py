@@ -18,13 +18,13 @@ def create_dataset(config: OmegaConf, val: bool = False):
         Dataset instance
     """
     dataset_type = config.dataset.get('type', 'robotwin')  # Default to robotwin
-    
+
     if dataset_type == 'robotwin':
         from .robotwin2.robotwin_agilex_dataset import RobotWinTaskDataset
-        
+
         # Get all parameters from config
         params = {}
-        
+
         # Add common parameters
         if hasattr(config, 'common'):
             params.update({
@@ -33,7 +33,7 @@ def create_dataset(config: OmegaConf, val: bool = False):
                 'num_video_frames': config.common.num_video_frames,
                 'video_size': (config.common.video_height, config.common.video_width),
             })
-        
+
         # Add dataset-specific parameters
         if hasattr(config.dataset, 'dataset_dir'):
             params['dataset_dir'] = config.dataset.dataset_dir
@@ -49,27 +49,27 @@ def create_dataset(config: OmegaConf, val: bool = False):
             params['image_aug'] = config.dataset.image_aug and not val  # No aug for validation
         if hasattr(config.dataset, 'randomized_limit_per_task'):
             params['randomized_limit_per_task'] = config.dataset.randomized_limit_per_task
-        
+
         # Add VLM checkpoint path
         if hasattr(config.model, 'vlm') and hasattr(config.model.vlm, 'checkpoint_path'):
             params['vlm_checkpoint_path'] = config.model.vlm.checkpoint_path
-        
+
         # Add any additional parameters from dataset.params
         if hasattr(config.dataset, 'params'):
             additional_params = OmegaConf.to_object(config.dataset.params)
             params.update(additional_params)
-        
+
         # Set validation flag
         params['val'] = val
-        
+
         return RobotWinTaskDataset(**params)
-    
+
     elif dataset_type == 'ac_one':
         from .ac_one.ac_one_dataset import ACOneDataset
-        
+
         # Get all parameters from config
         params = {}
-        
+
         # Add common parameters
         if hasattr(config, 'common'):
             params.update({
@@ -78,7 +78,7 @@ def create_dataset(config: OmegaConf, val: bool = False):
                 'num_video_frames': config.common.num_video_frames,
                 'video_size': (config.common.video_height, config.common.video_width),
             })
-        
+
         # Add dataset-specific parameters
         if hasattr(config.dataset, 'dataset_dir'):
             params['dataset_dir'] = config.dataset.dataset_dir
@@ -92,19 +92,19 @@ def create_dataset(config: OmegaConf, val: bool = False):
             params['val_episodes'] = config.dataset.val_episodes
         if hasattr(config.dataset, 'image_aug'):
             params['image_aug'] = config.dataset.image_aug and not val  # No aug for validation
-        
+
         # Add VLM checkpoint path
         if hasattr(config.model, 'vlm') and hasattr(config.model.vlm, 'checkpoint_path'):
             params['vlm_checkpoint_path'] = config.model.vlm.checkpoint_path
-        
+
         # Add any additional parameters from dataset.params
         if hasattr(config.dataset, 'params'):
             additional_params = OmegaConf.to_object(config.dataset.params)
             params.update(additional_params)
-        
+
         # Set validation flag
         params['val'] = val
-        
+
         return ACOneDataset(**params)
 
     elif dataset_type == 'latent_action':
@@ -143,10 +143,10 @@ def create_dataset(config: OmegaConf, val: bool = False):
 
     elif dataset_type == 'aloha_agilex_2':
         from .aloha_agilex_2.aloha_agilex2_dataset import AlohaAgilex2Dataset
-        
+
         # Get all parameters from config
         params = {}
-        
+
         # Add common parameters
         if hasattr(config, 'common'):
             params.update({
@@ -155,7 +155,7 @@ def create_dataset(config: OmegaConf, val: bool = False):
                 'num_video_frames': config.common.num_video_frames,
                 'video_size': (config.common.video_height, config.common.video_width),
             })
-        
+
         # Add dataset-specific parameters
         if hasattr(config.dataset, 'dataset_dir'):
             params['dataset_dir'] = config.dataset.dataset_dir
@@ -169,19 +169,19 @@ def create_dataset(config: OmegaConf, val: bool = False):
             params['val_episodes'] = config.dataset.val_episodes
         if hasattr(config.dataset, 'image_aug'):
             params['image_aug'] = config.dataset.image_aug and not val  # No aug for validation
-        
+
         # Add VLM checkpoint path
         if hasattr(config.model, 'vlm') and hasattr(config.model.vlm, 'checkpoint_path'):
             params['vlm_checkpoint_path'] = config.model.vlm.checkpoint_path
-        
+
         # Add any additional parameters from dataset.params
         if hasattr(config.dataset, 'params'):
             additional_params = OmegaConf.to_object(config.dataset.params)
             params.update(additional_params)
-        
+
         # Set validation flag
         params['val'] = val
-        
+
         return AlohaAgilex2Dataset(**params)
 
     elif dataset_type == 'lerobot':
@@ -222,31 +222,32 @@ def create_dataset(config: OmegaConf, val: bool = False):
 
         # Set validation flag
         params['val'] = val
-        
+
         # Support recursive nested LeRobot datasets via ConcatDataset
         if params.get('task_mode') == 'multi' and params.get('task_name') is None:
             import os
             from torch.utils.data import ConcatDataset
             datasets = []
             root_dir = params.get('dataset_dir') or params.get('root')
-            
+
             if not root_dir or not os.path.exists(root_dir):
                 raise ValueError(f"Invalid root directory for multi-dataset: {root_dir}")
-                
+
             for dirpath, dirnames, filenames in os.walk(root_dir):
                 meta_dir = os.path.join(dirpath, 'meta')
                 if 'meta' in dirnames and os.path.isdir(meta_dir) and ('info.json' in os.listdir(meta_dir) or 'episodes.jsonl' in os.listdir(meta_dir)):
                     # Found a LeRobot dataset at this level
                     actual_repo_id = os.path.basename(os.path.dirname(dirpath)) if os.path.basename(dirpath) == 'lerobot_data' else os.path.basename(dirpath)
-                    
+
                     if 'test' in dirpath:
                         dirnames.clear()
+                        print("================================ \n Found test dataset, ignore \n ================================")
                         continue
-                        
+
                     if 'config_' not in actual_repo_id or '_train' not in actual_repo_id:
                         dirnames.clear()
                         continue
-                        
+
                     leaf_params = params.copy()
                     leaf_params['task_mode'] = 'single'
                     leaf_params['root'] = dirpath
@@ -254,14 +255,14 @@ def create_dataset(config: OmegaConf, val: bool = False):
                     if 'dataset_dir' in leaf_params:
                         del leaf_params['dataset_dir']
                     leaf_params['repo_id'] = actual_repo_id
-                    
+
                     datasets.append(LeRobotMotusDataset(**leaf_params))
                     # Prevent recursing into subdirectories of a valid dataset
                     dirnames.clear()
-            
+
             if not datasets:
                 raise ValueError(f"No valid LeRobot datasets found in {root_dir}")
-                
+
             return ConcatDataset(datasets)
 
         return LeRobotMotusDataset(**params)
@@ -270,7 +271,7 @@ def create_dataset(config: OmegaConf, val: bool = False):
     # elif dataset_type == 'bridge':
     #     from .bridge_dataset import BridgeDataset  
     #     return BridgeDataset(**params)
-    
+
     else:
         raise ValueError(f"Unknown dataset type: {dataset_type}. Available types: robotwin, aloha_agilex_1, ac_one, aloha_agilex_2, table30")
 
@@ -282,12 +283,12 @@ def _process_vlm_inputs_batch(vlm_inputs: List[Dict[str, Any]]) -> Dict[str, tor
     pixel_values_list = [vlm_input.get('pixel_values') for vlm_input in vlm_inputs]
     image_grid_thw_list = [vlm_input.get('image_grid_thw') for vlm_input in vlm_inputs]
     attention_mask_list = [vlm_input.get('attention_mask') for vlm_input in vlm_inputs]
-    
+
     # Pad input_ids to same length (simplified like model implementation)
     max_seq_len = max(ids.shape[1] for ids in input_ids_list)
     padded_input_ids = []
     padded_attention_masks = []
-    
+
     for ids, mask in zip(input_ids_list, attention_mask_list):
         if ids.shape[1] < max_seq_len:
             padding_size = max_seq_len - ids.shape[1]
@@ -303,10 +304,10 @@ def _process_vlm_inputs_batch(vlm_inputs: List[Dict[str, Any]]) -> Dict[str, tor
         else:
             padded_ids = ids
             padded_mask = mask
-            
+
         padded_input_ids.append(padded_ids)
         padded_attention_masks.append(padded_mask)
-    
+
     # Batch everything
     return {
         'input_ids': torch.cat(padded_input_ids, dim=0),
@@ -319,14 +320,14 @@ def _process_vlm_inputs_batch(vlm_inputs: List[Dict[str, Any]]) -> Dict[str, tor
 def _process_language_embeddings_batch(language_embeddings: List[torch.Tensor], text_len: int = 512) -> torch.Tensor:
     """Process and batch language embeddings with padding."""
     padded_embeddings = []
-    
+
     for emb in language_embeddings:
         if emb.shape[0] <= text_len:
             padded = torch.cat([emb, emb.new_zeros(text_len - emb.shape[0], emb.shape[1])])
         else:
             padded = emb[:text_len]
         padded_embeddings.append(padded)
-    
+
     # Stack to [B, seq_len, dim]
     return torch.stack(padded_embeddings, dim=0)
 
@@ -343,29 +344,29 @@ def collate_fn(batch: List[Optional[Dict[str, Any]]]) -> Optional[Dict[str, Any]
     """
     # Filter out None samples
     batch = [sample for sample in batch if sample is not None]
-    
+
     if len(batch) == 0:
         return None
-    
+
     # Stack tensors（支持无 initial_state 的样本）
     first_frames = torch.stack([sample['first_frame'] for sample in batch])
     video_frames = torch.stack([sample['video_frames'] for sample in batch])
     action_sequences = torch.stack([sample['action_sequence'] for sample in batch])
     has_initial_state = all(('initial_state' in sample and sample['initial_state'] is not None) for sample in batch)
     initial_states = torch.stack([sample['initial_state'] for sample in batch]) if has_initial_state else None
-    
+
     # Process VLM inputs with padding in collate_fn
     vlm_inputs = [sample.get('vlm_inputs') for sample in batch]
     processed_vlm_inputs = None
     if vlm_inputs and all(vlm_input is not None for vlm_input in vlm_inputs):
         processed_vlm_inputs = _process_vlm_inputs_batch(vlm_inputs)
-    
+
     # Process language embeddings with padding in collate_fn  
     language_embeddings = [sample.get('language_embedding') for sample in batch if 'language_embedding' in sample]
     processed_language_embeddings = None
     if language_embeddings and any(emb is not None for emb in language_embeddings):
         processed_language_embeddings = _process_language_embeddings_batch(language_embeddings)
-    
+
     result = {
         'first_frame': first_frames,             # [B, C, H, W]
         'video_frames': video_frames,            # [B, F, C, H, W]
@@ -376,5 +377,5 @@ def collate_fn(batch: List[Optional[Dict[str, Any]]]) -> Optional[Dict[str, Any]
 
     if initial_states is not None:
         result['initial_state'] = initial_states
-    
+
     return result
