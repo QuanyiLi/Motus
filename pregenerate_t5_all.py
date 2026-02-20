@@ -11,7 +11,8 @@ for dirpath, dirnames, filenames in os.walk(root_dir):
     meta_dir = os.path.join(dirpath, "meta")
     if "meta" in dirnames and os.path.isdir(meta_dir) and ("info.json" in os.listdir(meta_dir) or "episodes.jsonl" in os.listdir(meta_dir)):
         print(f"Found dataset at: {dirpath}")
-        repo_id = os.path.basename(dirpath)
+        # The true repo_id should be config_X_train, but dirpath ends in lerobot_data
+        repo_id = os.path.basename(os.path.dirname(dirpath)) if os.path.basename(dirpath) == 'lerobot_data' else os.path.basename(dirpath)
         
         cmd = [
             sys.executable, script_path,
