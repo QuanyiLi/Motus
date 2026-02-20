@@ -223,6 +223,37 @@ def create_dataset(config: OmegaConf, val: bool = False):
         # Set validation flag
         params['val'] = val
         
+        # Support recursive nested LeRobot datasets via ConcatDataset
+        if params.get('task_mode') == 'multi' and params.get('task_name') is None:
+            import os
+            from torch.utils.data import ConcatDataset
+            datasets = []
+            root_dir = params.get('dataset_dir') or params.get('root')
+            
+            if not root_dir or not os.path.exists(root_dir):
+                raise ValueError(f"Invalid root directory for multi-dataset: {root_dir}")
+                
+            for dirpath, dirnames, filenames in os.walk(root_dir):
+                meta_dir = os.path.join(dirpath, 'meta')
+                if 'meta' in dirnames and os.path.isdir(meta_dir) and ('info.json' in os.listdir(meta_dir) or 'episodes.jsonl' in os.listdir(meta_dir)):
+                    # Found a LeRobot dataset at this level
+                    leaf_params = params.copy()
+                    leaf_params['task_mode'] = 'single'
+                    leaf_params['root'] = dirpath
+                    # Need to drop dataset_dir if it exists, use root instead
+                    if 'dataset_dir' in leaf_params:
+                        del leaf_params['dataset_dir']
+                    leaf_params['repo_id'] = os.path.basename(dirpath)
+                    
+                    datasets.append(LeRobotMotusDataset(**leaf_params))
+                    # Prevent recursing into subdirectories of a valid dataset
+                    dirnames.clear()
+            
+            if not datasets:
+                raise ValueError(f"No valid LeRobot datasets found in {root_dir}")
+                
+            return ConcatDataset(datasets)
+
         return LeRobotMotusDataset(**params)
 
     # Example: Add more dataset types here

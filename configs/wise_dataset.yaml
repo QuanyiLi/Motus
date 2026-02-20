@@ -19,7 +19,7 @@ dataset:
   image_aug: false
   
   # Task selection parameters
-  task_mode: "single"      # "single" or "multi" - single task or multi task training
+  task_mode: "multi"      # "single" or "multi" - single task or multi task training
   # task_name options:
   #   - Single task: task_name: fold_towel
   #   - Multiple specified tasks (multi mode): task_name: [fold_towel, fold_towel_0929]
@@ -28,8 +28,8 @@ dataset:
 
   params:
     # Required: LeRobotMotusDataset needs repo_id + root to locate the local dataset
-    repo_id: "wise_dataset_merged"
-    root: "/work/vita/lanfeng/vlas/vla/wise_dataset/merged_train"
+    repo_id: "wise_dataset_0.3.2"
+    root: "/work/vita/lanfeng/vlas/vla/wise_dataset_0.3.2"
 
     # Embodiment type for loading normalization statistics (e.g., "aloha_agilex_2", "ac_one")
     embodiment_type: "wise_bot"
