@@ -18,6 +18,13 @@ MOTUS_DIR="/work/vita/lanfeng/vlas/Motus"
 DATA_ROOT="/work/vita/lanfeng/vlas/wise_dataset/merged_dataset"
 CONFIG_FILE="configs/wise_dataset.yaml"
 
+# Load necessary CUDA module if available
+module load cuda/12.4 || true
+
+# Important: set CUDA_HOME and add Conda's nvcc to PATH if installed via conda
+export CUDA_HOME=${CONDA_PREFIX:-/usr/local/cuda}
+export PATH=$CUDA_HOME/bin:$PATH
+
 # NOTE: Change directory to Motus to ensure relative paths work (e.g. configs/zero1.json)
 cd ${MOTUS_DIR}
 
