@@ -1,0 +1,21 @@
+#!/bin/bash
+#SBATCH --job-name=motus_t5_pregen
+#SBATCH --output=/home/lfeng/task_logs/t5_pregen_%j.log
+#SBATCH --partition=h100
+#SBATCH --qos=vita
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=16
+#SBATCH --gpus-per-node=1
+#SBATCH --nodes=1
+#SBATCH --time=24:00:00
+#SBATCH --mem=100G
+
+# Directory paths on remote server
+MOTUS_DIR="/work/vita/lanfeng/vlas/Motus"
+
+# NOTE: Change directory to Motus to ensure relative paths work
+cd ${MOTUS_DIR}
+
+echo "Starting T5 pregeneration..."
+srun python pregenerate_t5_all.py
+echo "T5 pregeneration completed."
