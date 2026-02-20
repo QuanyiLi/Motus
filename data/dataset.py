@@ -237,13 +237,23 @@ def create_dataset(config: OmegaConf, val: bool = False):
                 meta_dir = os.path.join(dirpath, 'meta')
                 if 'meta' in dirnames and os.path.isdir(meta_dir) and ('info.json' in os.listdir(meta_dir) or 'episodes.jsonl' in os.listdir(meta_dir)):
                     # Found a LeRobot dataset at this level
+                    actual_repo_id = os.path.basename(os.path.dirname(dirpath)) if os.path.basename(dirpath) == 'lerobot_data' else os.path.basename(dirpath)
+                    
+                    if 'test' in dirpath:
+                        dirnames.clear()
+                        continue
+                        
+                    if 'config_' not in actual_repo_id or '_train' not in actual_repo_id:
+                        dirnames.clear()
+                        continue
+                        
                     leaf_params = params.copy()
                     leaf_params['task_mode'] = 'single'
                     leaf_params['root'] = dirpath
                     # Need to drop dataset_dir if it exists, use root instead
                     if 'dataset_dir' in leaf_params:
                         del leaf_params['dataset_dir']
-                    leaf_params['repo_id'] = os.path.basename(dirpath)
+                    leaf_params['repo_id'] = actual_repo_id
                     
                     datasets.append(LeRobotMotusDataset(**leaf_params))
                     # Prevent recursing into subdirectories of a valid dataset
