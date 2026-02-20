@@ -16,6 +16,10 @@ import warnings
 # Set CUDA memory management environment variables to avoid fragmentation
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
+# Set HF datasets cache to a unique local directory per rank to prevent NFS lock conflicts
+rank = os.environ.get("RANK", "0")
+os.environ["HF_DATASETS_CACHE"] = f"/tmp/hf_cache_{os.environ.get('SLURM_JOB_ID', 'dev')}_{rank}"
+
 import torch
 import torch.distributed as dist
 from torch.utils.data import DataLoader
@@ -665,8 +669,7 @@ def main():
         
         # Create dataloaders
         logger.info("Creating dataloaders...")
-        with accelerator.main_process_first():
-            train_dataloader, val_dataloader = create_dataloaders(config, rank, world_size)
+        train_dataloader, val_dataloader = create_dataloaders(config, rank, world_size)
         
         # Create custom saving hook to avoid NCCL timeout issues
         def save_model_hook(models, weights, output_dir):
