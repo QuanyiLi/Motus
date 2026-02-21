@@ -119,10 +119,12 @@ class StandaloneMotusPolicy:
         return model
 
     def _create_model_config(self) -> MotusConfig:
+        vae_path = os.path.join(self.wan_path, "Wan2.2_VAE.pth")
+        
         config = MotusConfig(
-            wan_checkpoint_path="", # Not needed for pure inference
-            vae_path="",
-            wan_config_path="",
+            wan_checkpoint_path=self.wan_path,
+            vae_path=vae_path,
+            wan_config_path=self.wan_path,
             video_precision='bfloat16',
             vlm_checkpoint_path=self.vlm_path,
             
@@ -374,12 +376,13 @@ def verify():
     print("Starting standalone inference verification...")
     # These are dummy paths / stats if not provided, just testing model initialization and forward pass
     ckpt_path = "/home/quanyi/code/Motus/pretrained_models/Motus/mp_rank_00_model_states.pt"
+    wan_path = "/home/quanyi/code/Motus/pretrained_models/Wan2.2-TI2V-5B"
     vlm_path = "/home/quanyi/code/Motus/pretrained_models/Qwen3-VL-2B-Instruct"
 
     try:
         policy = StandaloneMotusPolicy(
             checkpoint_path=ckpt_path,
-            wan_path="",
+            wan_path=wan_path,
             vlm_path=vlm_path,
             device="cuda" if torch.cuda.is_available() else "cpu",
             execute_steps=20,
