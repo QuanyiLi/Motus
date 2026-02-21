@@ -204,7 +204,23 @@ class StandaloneMotusPolicy:
             return x
         shape = x.shape
         x_flat = x.reshape(-1, shape[-1])
-        norm = (x_flat - self.action_min.unsqueeze(0)) / self.action_range.unsqueeze(0)
+        
+        # Match dimensions smoothly for states vs actions
+        feat_dim = shape[-1]
+        a_min = self.action_min
+        a_range = self.action_range
+        
+        if a_min.shape[0] < feat_dim:
+            # Pad with the last element if state_dim > action_dim (e.g. 9 vs 8)
+            pad_len = feat_dim - a_min.shape[0]
+            a_min = torch.cat([a_min, a_min[-1].repeat(pad_len)])
+            a_range = torch.cat([a_range, a_range[-1].repeat(pad_len)])
+        elif a_min.shape[0] > feat_dim:
+            # Truncate if slicing
+            a_min = a_min[:feat_dim]
+            a_range = a_range[:feat_dim]
+
+        norm = (x_flat - a_min.unsqueeze(0)) / a_range.unsqueeze(0)
         return norm.reshape(shape)
 
     def _denormalize_actions(self, y: torch.Tensor) -> torch.Tensor:
@@ -212,7 +228,20 @@ class StandaloneMotusPolicy:
             return y
         shape = y.shape
         y_flat = y.reshape(-1, shape[-1])
-        denorm = y_flat * self.action_range.unsqueeze(0) + self.action_min.unsqueeze(0)
+        
+        feat_dim = shape[-1]
+        a_min = self.action_min
+        a_range = self.action_range
+        
+        if a_min.shape[0] < feat_dim:
+            pad_len = feat_dim - a_min.shape[0]
+            a_min = torch.cat([a_min, a_min[-1].repeat(pad_len)])
+            a_range = torch.cat([a_range, a_range[-1].repeat(pad_len)])
+        elif a_min.shape[0] > feat_dim:
+            a_min = a_min[:feat_dim]
+            a_range = a_range[:feat_dim]
+            
+        denorm = y_flat * a_range.unsqueeze(0) + a_min.unsqueeze(0)
         return denorm.reshape(shape)
 
     def update_obs(self, image: np.ndarray, state: np.ndarray):
