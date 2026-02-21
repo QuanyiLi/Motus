@@ -50,7 +50,8 @@ class StandaloneMotusPolicy:
         video_height: int = 384,
         video_width: int = 320,
         execute_steps: int = 20,
-        stat_path: Optional[str] = None
+        stat_path: Optional[str] = None,
+        **kwargs
     ):
         self.device = device
         self.checkpoint_path = checkpoint_path
@@ -61,6 +62,7 @@ class StandaloneMotusPolicy:
         self.video_height = video_height
         self.video_width = video_width
         self.execute_steps = execute_steps
+        self.kwargs = kwargs
 
         # Initialize model WITHOUT loading pretrained backbones
         self.model = self._load_model()
@@ -121,7 +123,7 @@ class StandaloneMotusPolicy:
     def _create_model_config(self) -> MotusConfig:
         vae_path = os.path.join(self.wan_path, "Wan2.2_VAE.pth")
 
-        config = MotusConfig(
+        config_args = dict(
             wan_checkpoint_path=self.wan_path,
             vae_path=vae_path,
             wan_config_path=self.wan_path,
@@ -155,6 +157,11 @@ class StandaloneMotusPolicy:
             load_pretrained_backbones=False,
             training_mode='finetune',
         )
+        
+        # Override with any custom kwargs for dynamic evaluation
+        config_args.update(self.kwargs)
+        
+        config = MotusConfig(**config_args)
         return config
 
     def _load_normalization_stats(self):
