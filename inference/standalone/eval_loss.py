@@ -14,11 +14,8 @@ import torch
 from torch.utils.data import DataLoader
 from omegaconf import OmegaConf
 
-# Add project root and standalone directory to path
-sys.path.append(str(Path(__file__).parent.parent))
-standalone_dir = Path(__file__).parent.parent / "inference" / "standalone"
-if str(standalone_dir) not in sys.path:
-    sys.path.append(str(standalone_dir))
+# Add project root path (3 levels up from inference/standalone/eval_loss.py)
+sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from models.motus import Motus, MotusConfig
 from data.dataset import create_dataset, collate_fn

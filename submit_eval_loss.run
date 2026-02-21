@@ -11,7 +11,7 @@
 #SBATCH --mem=100G
 
 
-SCRIPT_PATH="/work/vita/lanfeng/vlas/Motus/train/eval_loss.py"
+SCRIPT_PATH="/work/vita/lanfeng/vlas/Motus/inference/standalone/eval_loss.py"
 CONFIG_FILE="/work/vita/lanfeng/vlas/Motus/configs/wise_dataset_test_loss.yaml"
 
 srun --ntasks=1 --ntasks-per-node=1 bash -c '
