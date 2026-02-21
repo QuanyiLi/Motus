@@ -360,7 +360,7 @@ class StandaloneMotusPolicy:
         current_frame_batch = self.obs_cache[-1]  # [B, C, H, W]
         B = current_frame_batch.shape[0]
 
-        scene_prefix = ("The whole scene is in a realistic tabletop pick and place task.")
+        scene_prefix = ("") # align with the training time
 
         # We can just construct one text string per batch item
         full_instruction_batch = [f"{scene_prefix}"] * B

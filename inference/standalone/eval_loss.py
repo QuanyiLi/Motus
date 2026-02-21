@@ -52,6 +52,28 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     dtype = torch.bfloat16
 
+    logger.info(f"Creating {args.split} dataloader...")
+    dataset = create_dataset(config, val=(args.split == "val"))
+    dataloader = DataLoader(
+        dataset,
+        batch_size=config.training.batch_size,
+        shuffle=True,  # Shuffle to get a random batch
+        num_workers=config.system.num_workers,
+        pin_memory=config.system.pin_memory,
+        collate_fn=collate_fn,
+        drop_last=True,
+    )
+
+    logger.info("Fetching a single batch...")
+    data_iter = iter(dataloader)
+    batch = None
+    while batch is None:
+        try:
+            batch = next(data_iter)
+        except StopIteration:
+            logger.error("Dataloader ran out of batches immediately!")
+            return
+
     logger.info("Initializing StandaloneMotusPolicy...")
     # Instantiate StandaloneMotusPolicy to match exact inference loading structures
     policy = StandaloneMotusPolicy(
@@ -83,28 +105,6 @@ def main():
         action_loss_weight=config.model.loss_weights.action_loss_weight,
     )
     model = policy.model
-
-    logger.info(f"Creating {args.split} dataloader...")
-    dataset = create_dataset(config, val=(args.split == "val"))
-    dataloader = DataLoader(
-        dataset,
-        batch_size=config.training.batch_size,
-        shuffle=True, # Shuffle to get a random batch
-        num_workers=config.system.num_workers,
-        pin_memory=config.system.pin_memory,
-        collate_fn=collate_fn,
-        drop_last=True,
-    )
-
-    logger.info("Fetching a single batch...")
-    data_iter = iter(dataloader)
-    batch = None
-    while batch is None:
-        try:
-            batch = next(data_iter)
-        except StopIteration:
-            logger.error("Dataloader ran out of batches immediately!")
-            return
 
     logger.info("Moving batch to device...")
     first_frame = batch['first_frame'].to(device, dtype=dtype)          # [B, C, H, W]
