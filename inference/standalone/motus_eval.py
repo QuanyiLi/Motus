@@ -14,6 +14,7 @@ import datasets
 import torch
 import numpy as np
 import cv2
+from omegaconf import OmegaConf
 
 datasets.disable_progress_bar()
 
@@ -40,6 +41,8 @@ wrist_image_key = f"{obs_image_prefix}.wrist_image"
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Motus Evaluation")
+    parser.add_argument("--config", type=str, default="",
+                        help="Path to configuration yaml (ensures eval matches training config scale)")
     parser.add_argument("--ckpt_path", type=str, default="",
                         help="Path to Motus checkpoint mp_rank_00_model_states.pt")
     parser.add_argument("--wan_path", type=str, default="",
@@ -94,17 +97,45 @@ def main():
     if args.aggregate_only:
         aggregate_results(args.result_dir)
         return
-
+        
     os.makedirs(args.result_dir, exist_ok=True)
+    
+    kwargs = {}
+    if args.config:
+        if not os.path.exists(args.config):
+            raise FileNotFoundError(f"Config file not found: {args.config}")
+        config = OmegaConf.load(args.config)
+        kwargs.update(dict(
+            wan_path=config.model.wan.checkpoint_path if not args.wan_path else args.wan_path,
+            vlm_path=config.model.vlm.checkpoint_path if not args.vlm_path else args.vlm_path,
+            video_height=config.common.video_height,
+            video_width=config.common.video_width,
+            action_expert_dim=config.model.action_expert.hidden_size,
+            action_expert_ffn_dim_multiplier=config.model.action_expert.ffn_dim_multiplier,
+            action_expert_norm_eps=config.model.action_expert.norm_eps,
+            und_expert_hidden_size=config.model.und_expert.hidden_size,
+            und_expert_ffn_dim_multiplier=config.model.und_expert.ffn_dim_multiplier,
+            und_expert_norm_eps=config.model.und_expert.norm_eps,
+            vlm_adapter_input_dim=config.model.und_expert.vlm.input_dim,
+            vlm_adapter_projector_type=config.model.und_expert.vlm.projector_type,
+            global_downsample_rate=config.common.global_downsample_rate,
+            video_action_freq_ratio=config.common.video_action_freq_ratio,
+            num_video_frames=config.common.num_video_frames,
+            batch_size=args.num_env, # Ensures backbone scales dimensionally matching num_envs
+            video_loss_weight=config.model.loss_weights.video_loss_weight,
+            action_loss_weight=config.model.loss_weights.action_loss_weight,
+        ))
+    else:
+        # Fallback to direct script args if no YAML provided
+        kwargs.update(dict(wan_path=args.wan_path, vlm_path=args.vlm_path))
 
-    # Initialize policy
+    # Initialize policy matching exactly what training loaded!
     policy = StandaloneMotusPolicy(
         checkpoint_path=args.ckpt_path,
-        wan_path=args.wan_path,
-        vlm_path=args.vlm_path,
         device="cuda" if torch.cuda.is_available() else "cpu",
         execute_steps=20,
-        stat_path=os.path.join(CURRENT_DIR, "utils", "stat.json")
+        stat_path=os.path.join(CURRENT_DIR, "utils", "stat.json"),
+        **kwargs
     )
 
     splits = ["train", "test"] if args.split == "both" else [args.split]

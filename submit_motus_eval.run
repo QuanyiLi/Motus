@@ -21,9 +21,8 @@ conda activate motus
 SCRIPT_PATH="/work/vita/lanfeng/vlas/Motus/inference/standalone/motus_eval.py"
 RESULT_DIR="/work/vita/lanfeng/vlas/motus_eval_result"
 MOTUS_CKPT="/work/vita/lanfeng/vlas/Motus/ckpt_original_wan/wise_dataset/motus_wise_dataset/checkpoint_step_5000/pytorch_model/mp_rank_00_model_states.pt"
-WAN_PATH="/work/vita/lanfeng/vlas/Motus/pretrained_models/Wan2.2-TI2V-5B"
-VLM_PATH="/work/vita/lanfeng/vlas/Motus/pretrained_models/Qwen3-VL-2B-Instruct"
 DATASET_ROOT="/work/vita/lanfeng/vlas/vla/wise_dataset/no_noise_demo_1_round"
+CONFIG_FILE="/work/vita/lanfeng/vlas/Motus/configs/wise_dataset_test_loss.yaml"
 
 mkdir -p $RESULT_DIR
 
@@ -38,9 +37,8 @@ srun --ntasks=4 --ntasks-per-node=4 bash -c '
     export CUDA_VISIBLE_DEVICES=$SLURM_PROCID
 
     python '"$SCRIPT_PATH"' \
+        --config='"$CONFIG_FILE"' \
         --ckpt_path='"$MOTUS_CKPT"' \
-        --wan_path='"$WAN_PATH"' \
-        --vlm_path='"$VLM_PATH"' \
         --dataset_root='"$DATASET_ROOT"' \
         --result_dir='"$RESULT_DIR"' \
         --start_subset=$START \
