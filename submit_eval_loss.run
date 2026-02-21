@@ -1,0 +1,26 @@
+#!/bin/bash
+#SBATCH --job-name=motus_eval_loss
+#SBATCH --output=/home/lfeng/task_logs/%j.log
+#SBATCH --partition=h100
+#SBATCH --qos=vita
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=16
+#SBATCH --gpus-per-node=1
+#SBATCH --nodes=1
+#SBATCH --time=1:00:00
+#SBATCH --mem=100G
+
+
+SCRIPT_PATH="/work/vita/lanfeng/vlas/Motus/train/eval_loss.py"
+CONFIG_FILE="/work/vita/lanfeng/vlas/Motus/configs/wise_dataset_test_loss.yaml"
+
+srun --ntasks=1 --ntasks-per-node=1 bash -c '
+    echo "[Node $(hostname)] Running single-batch loss evaluation"
+    export CUDA_VISIBLE_DEVICES=0
+
+    python '"$SCRIPT_PATH"' \
+        --config '"$CONFIG_FILE"' \
+        --split train
+'
+
+echo "Evaluation complete."
