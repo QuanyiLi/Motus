@@ -44,7 +44,7 @@ dataset:
 model:
   wan:
     config_path: "/work/vita/lanfeng/vlas/Motus/pretrained_models/Motus_Wan2_2_5B_pretrain"
-    checkpoint_path: "/work/vita/lanfeng/vlas/Motus/pretrained_models/Motus_Wan2_2_5B_pretrain"
+    checkpoint_path: "/work/vita/lanfeng/vlas/Motus/pretrained_models/Wan2.2-TI2V-5B"
     vae_path: "/work/vita/lanfeng/vlas/Motus/pretrained_models/Wan2.2-TI2V-5B/Wan2.2_VAE.pth"
     precision: "bfloat16"
   vlm:
