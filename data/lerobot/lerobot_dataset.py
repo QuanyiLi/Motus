@@ -35,6 +35,17 @@ warnings.filterwarnings("ignore", category=FutureWarning, message=".*multichanne
 
 logger = logging.getLogger(__name__)
 
+def _episode_instruction_from_meta(ep_row: Dict[str, Any]) -> str:
+    """Helper to identically fetch language instruction from episodes.jsonl row"""
+    # episodes.jsonl stores "tasks": [<task string>, ...]
+    tasks = ep_row.get("tasks", None)
+    if isinstance(tasks, list) and len(tasks) > 0 and isinstance(tasks[0], str):
+        return tasks[0]
+    # Fallback: try "task"
+    task = ep_row.get("task", "")
+    if isinstance(task, str):
+        return task
+    return str(task)
 
 class LeRobotMotusDataset(data.Dataset):
     """
@@ -747,13 +758,16 @@ class LeRobotMotusDataset(data.Dataset):
                             "language_embedding not found in item and t5_embedding_path not found in meta/episodes.jsonl; "
                             "you can set enable_t5_fallback=True to encode and cache T5 embeddings on-the-fly."
                         )
-
-                    # On-the-fly encoding (use language_instruction, fallback to task)
-                    instr = item_cond.get("language_instruction", None)
-                    if instr is None or (isinstance(instr, str) and len(instr.strip()) == 0):
+                    # On-the-fly encoding (use _episode_instruction_from_meta fallback)
+                    if self.task_mode == 'single':
+                        ep_meta_for_text = self.lerobot_dataset.meta.episodes.get(ep_index, {})
+                    else:
+                        ep_meta_for_text = self.lerobot_dataset._datasets[task_idx].meta.episodes.get(ep_index, {})
+                    
+                    instr = _episode_instruction_from_meta(ep_meta_for_text)
+                    if len(instr.strip()) == 0:
                         instr = item_cond.get("task", "")
-                    if not isinstance(instr, str):
-                        instr = str(instr)
+                        
                     emb = self._encode_and_cache_t5_embedding(ep_index, instr)
                     self._episode_embedding_cache[ep_index] = emb if isinstance(emb, torch.Tensor) else torch.tensor(emb)
                     cached = self._episode_embedding_cache[ep_index]
@@ -786,10 +800,19 @@ class LeRobotMotusDataset(data.Dataset):
 
         vlm_tokens = None
         if self.vlm_processor:
-            # Prefer dataset-stored text; fallback to `task`
-            text_instr = item_cond.get("language_instruction", None)
-            if text_instr is None or (isinstance(text_instr, str) and len(text_instr.strip()) == 0):
+            # Prefer dataset-stored text from meta/episodes.jsonl
+            ep_index_raw = item_cond.get("episode_index", None)
+            ep_index = int(ep_index_raw.item()) if hasattr(ep_index_raw, "item") else int(ep_index_raw)
+            
+            if self.task_mode == 'single':
+                ep_meta_for_text = self.lerobot_dataset.meta.episodes.get(ep_index, {})
+            else:
+                ep_meta_for_text = self.lerobot_dataset._datasets[task_idx].meta.episodes.get(ep_index, {})
+                
+            text_instr = _episode_instruction_from_meta(ep_meta_for_text)
+            if len(text_instr.strip()) == 0:
                 text_instr = item_cond.get("task", "")
+                
             first_frame_pil = tensor_to_pil(first_frame)
             vlm_tokens = preprocess_vlm_messages(text_instr, first_frame_pil, self.vlm_processor)
 
