@@ -1,17 +1,15 @@
-import torch
-import torch.nn as nn
-import numpy as np
-import cv2
-from pathlib import Path
-import sys
-import os
 import logging
-from typing import List, Dict, Any, Optional
+import os
+import sys
 from collections import deque
+from pathlib import Path
+from typing import Dict, Optional
+
+import matplotlib
+import numpy as np
+import torch
 from PIL import Image
 from transformers import AutoProcessor
-import matplotlib.pyplot as plt
-import matplotlib
 
 matplotlib.use('Agg')  # Use non-interactive backend
 
@@ -337,6 +335,17 @@ class StandaloneMotusPolicy:
             vlm_inputs['image_grid_thw'] = vlm_inputs['image_grid_thw'].to(self.device)
         return vlm_inputs
 
+    @staticmethod
+    def batch_tensor_to_string(tensor):
+        strings = []
+        for byte_tensor in tensor:
+            byte_list = byte_tensor.tolist()
+            # Remove padding zeros
+            byte_list = [b for b in byte_list if b != 0]
+            s = bytes(byte_list).decode("utf-8")
+            strings.append(s)
+        return strings
+
     def act(self, image: np.ndarray, state: np.ndarray, task_instruction) -> np.ndarray:
         """
         Main entry point for external environments.
@@ -344,7 +353,7 @@ class StandaloneMotusPolicy:
         Returns: [B, action_dim] array 
         """
         self.update_obs(image, state)
-        self.current_task_instruction = task_instruction
+        self.current_task_instruction = self.batch_tensor_to_string(task_instruction)
 
         if len(self.action_queue) == 0:
             logger.info("Action queue empty. Replanning...")
