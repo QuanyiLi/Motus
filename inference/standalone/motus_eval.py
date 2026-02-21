@@ -160,6 +160,8 @@ def main():
             # Look up T5 embeddings for this task. 
             # We assume batch size = num_env (12) and collect embeddings from episode_000000 to episode_000011.
             t5_embeddings = []
+            text_len = 512 # Standard Motus sequence padding length
+            
             for ep_idx in range(args.num_env):
                 t5_path = os.path.join(
                     args.dataset_root, f"{cfg_name}_{split}", 
@@ -184,6 +186,12 @@ def main():
                     if emb.ndim == 3:
                         emb = emb.squeeze(0)
                         
+                    # Apply identical padding as _process_language_embeddings_batch from dataset.py
+                    if emb.shape[0] <= text_len:
+                        emb = torch.cat([emb, emb.new_zeros(text_len - emb.shape[0], emb.shape[1])])
+                    else:
+                        emb = emb[:text_len]
+                        
                     t5_embeddings.append(emb)
                 else:
                     print(f"WARNING: No T5 embedding found at {t5_path}")
@@ -192,7 +200,7 @@ def main():
                         t5_embeddings.append(t5_embeddings[0].clone())
 
             if len(t5_embeddings) == args.num_env:
-                stacked_t5 = torch.stack(t5_embeddings, dim=0) # [12, seq_len, dim]
+                stacked_t5 = torch.stack(t5_embeddings, dim=0) # [12, 512, dim]
                 policy.current_t5_embedding = stacked_t5.float()
                 print(f"Loaded {args.num_env} T5 embeddings for {cfg_name}")
             else:
