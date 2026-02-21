@@ -1,0 +1,62 @@
+#!/bin/bash
+#SBATCH --job-name=motus_eval
+#SBATCH --output=/home/lfeng/task_logs/%j.log
+#SBATCH --partition=h100
+#SBATCH --qos=vita
+#SBATCH --ntasks=4
+#SBATCH --cpus-per-task=16
+#SBATCH --gpus-per-node=4
+#SBATCH --nodes=1
+#SBATCH --time=12:00:00
+#SBATCH --mem=200G
+
+# ============================================================
+# Evaluate Motus policy on all 24 subsets (train+test)
+# using 1 node with 4 GPUs (6 configs per GPU task).
+# ============================================================
+
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate motus
+
+SCRIPT_PATH="/home/quanyi/code/Motus/inference/standalone/motus_eval.py"
+RESULT_DIR="/work/vita/lanfeng/vlas/motus_eval_result"
+MOTUS_CKPT="/work/vita/lanfeng/vlas/Motus/ckpt_original_wan/wise_dataset/motus_wise_dataset/checkpoint_step_5000/pytorch_model/mp_rank_00_model_states.pt"
+WAN_PATH="/work/vita/lanfeng/vlas/Motus/pretrained_models/Wan2.2-TI2V-5B"
+VLM_PATH="/work/vita/lanfeng/vlas/Motus/pretrained_models/Qwen3-VL-2B-Instruct"
+DATASET_ROOT="/work/vita/lanfeng/vlas/vla/wise_dataset/no_noise_demo_1_round"
+
+mkdir -p $RESULT_DIR
+
+# Each srun task gets SLURM_PROCID in {0..3}.
+# Compute the subset shard: 6 configs per task (24 total configs).
+srun --ntasks=4 --ntasks-per-node=4 bash -c '
+    START=$((SLURM_PROCID * 6))
+    END=$(((SLURM_PROCID + 1) * 6))
+    echo "[Node $(hostname), PROCID=$SLURM_PROCID] Evaluating subsets $START to $((END - 1))"
+
+    # Distribute standard CUDA devices so they do not overlap
+    export CUDA_VISIBLE_DEVICES=$SLURM_PROCID
+
+    python '"$SCRIPT_PATH"' \
+        --ckpt_path='"$MOTUS_CKPT"' \
+        --wan_path='"$WAN_PATH"' \
+        --vlm_path='"$VLM_PATH"' \
+        --dataset_root='"$DATASET_ROOT"' \
+        --result_dir='"$RESULT_DIR"' \
+        --start_subset=$START \
+        --end_subset=$END \
+        --split=both \
+        --eval_rounds=1 \
+        > "'"$RESULT_DIR"'/node_${SLURM_PROCID}.log" 2>&1
+'
+
+echo "All rollouts complete."
+
+# Final aggregation (runs on the first node)
+echo "Running final aggregation..."
+python $SCRIPT_PATH \
+    --aggregate_only \
+    --result_dir=$RESULT_DIR \
+    --ckpt_path="" --wan_path="" --vlm_path=""
+
+echo "Done. Results in $RESULT_DIR"
