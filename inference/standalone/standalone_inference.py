@@ -375,7 +375,7 @@ class StandaloneMotusPolicy:
 def verify():
     print("Starting standalone inference verification...")
     # These are dummy paths / stats if not provided, just testing model initialization and forward pass
-    ckpt_path = "/work/vita/lanfeng/vlas/Motus/pretrained_models/Motus/mp_rank_00_model_states.pt"
+    ckpt_path = "/work/vita/lanfeng/vlas/Motus/ckpt_original_wan/wise_dataset/motus_wise_dataset/checkpoint_step_5000/pytorch_model/mp_rank_00_model_states.pt"
     wan_path = "/work/vita/lanfeng/vlas/Motus/pretrained_models/Wan2.2-TI2V-5B"
     vlm_path = "/work/vita/lanfeng/vlas/Motus/pretrained_models/Qwen3-VL-2B-Instruct"
 
