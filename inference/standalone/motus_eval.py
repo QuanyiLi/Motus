@@ -83,34 +83,9 @@ def aggregate_results(result_dir):
 
 def process_obs_images(obs):
     cam_high = obs[image_1_key].cpu().numpy() if torch.is_tensor(obs[image_1_key]) else obs[image_1_key]
-    wrist = obs[wrist_image_key].cpu().numpy() if torch.is_tensor(obs[wrist_image_key]) else obs[wrist_image_key]
-    
-    B = cam_high.shape[0]
-    has_second = image_2_key in obs
-    if has_second:
-        cam_right = obs[image_2_key].cpu().numpy() if torch.is_tensor(obs[image_2_key]) else obs[image_2_key]
-    else:
-        cam_right = np.zeros_like(wrist)
-
-    concat_images = []
-    for i in range(B):
-        img_h = cam_high[i]
-        img_l = wrist[i]
-        img_r = cam_right[i]
-
-        top_h, target_w, _ = img_h.shape
-        split_w = target_w // 2
-        right_w = target_w - split_w
-
-        # Resize bottoms match target_w together
-        img_l_resized = cv2.resize(img_l, (split_w, img_l.shape[0]))
-        img_r_resized = cv2.resize(img_r, (right_w, img_r.shape[0]))
-        bottom = np.concatenate([img_l_resized, img_r_resized], axis=1)
-
-        concat = np.concatenate([img_h, bottom], axis=0)
-        concat_images.append(concat)
-
-    return np.stack(concat_images, axis=0)
+    # StandaloneMotusPolicy.update_obs will automatically call resize_with_padding
+    # to fit the model's required (384, 320) resolution.
+    return cam_high
 
 
 def main():
