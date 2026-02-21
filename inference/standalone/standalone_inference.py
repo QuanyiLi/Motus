@@ -29,29 +29,32 @@ try:
     from wan.modules.t5 import T5EncoderModel
     from utils.image_utils import resize_with_padding
 except ImportError as e:
-    raise ImportError(f"Failed to import local dependencies. Make sure 'models', 'utils', and 'bak' folders are in {CURRENT_DIR}. Error: {e}")
+    raise ImportError(
+        f"Failed to import local dependencies. Make sure 'models', 'utils', and 'bak' folders are in {CURRENT_DIR}. Error: {e}")
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
 
 class StandaloneMotusPolicy:
     """
     Standalone Motus Policy for inference in external simulation environments.
     Generates 48 actions and executes the first 20 (action chunking).
     """
+
     def __init__(
-        self,
-        checkpoint_path: str,
-        wan_path: str,
-        vlm_path: str,
-        device: str = "cuda",
-        state_dim: int = 9,
-        action_dim: int = 8,
-        video_height: int = 384,
-        video_width: int = 320,
-        execute_steps: int = 20,
-        stat_path: Optional[str] = None,
-        **kwargs
+            self,
+            checkpoint_path: str,
+            wan_path: str,
+            vlm_path: str,
+            device: str = "cuda",
+            state_dim: int = 9,
+            action_dim: int = 8,
+            video_height: int = 384,
+            video_width: int = 320,
+            execute_steps: int = 20,
+            stat_path: Optional[str] = None,
+            **kwargs
     ):
         self.device = device
         self.checkpoint_path = checkpoint_path
@@ -157,10 +160,10 @@ class StandaloneMotusPolicy:
             load_pretrained_backbones=False,
             training_mode='finetune',
         )
-        
+
         # Override with any custom kwargs for dynamic evaluation
         config_args.update(self.kwargs)
-        
+
         config = MotusConfig(**config_args)
         return config
 
@@ -187,7 +190,8 @@ class StandaloneMotusPolicy:
                     min_vals = min_vals.repeat(self.action_dim)
                     max_vals = max_vals.repeat(self.action_dim)
                 elif min_vals.numel() != self.action_dim:
-                    logger.warning(f"Stat min dim {min_vals.numel()} mismatch action_dim {self.action_dim}. Resizing...")
+                    logger.warning(
+                        f"Stat min dim {min_vals.numel()} mismatch action_dim {self.action_dim}. Resizing...")
                     if min_vals.numel() > self.action_dim:
                         min_vals = min_vals[:self.action_dim]
                         max_vals = max_vals[:self.action_dim]
@@ -204,7 +208,8 @@ class StandaloneMotusPolicy:
             else:
                 logger.warning("No valid stats found in stat file.")
         else:
-            logger.warning("No stat file provided or found. Assuming actions/states are already normalized or don't need it.")
+            logger.warning(
+                "No stat file provided or found. Assuming actions/states are already normalized or don't need it.")
 
     def _normalize_actions(self, x: torch.Tensor) -> torch.Tensor:
         if self.action_min is None:
@@ -270,7 +275,7 @@ class StandaloneMotusPolicy:
             image_tensor = image.clone().detach() if torch.is_tensor(image) else torch.tensor(image)
             if image_tensor.dim() == 3:
                 image_tensor = image_tensor.unsqueeze(0)
-            if image_tensor.shape[-1] == 3: # Assuming B, H, W, C
+            if image_tensor.shape[-1] == 3:  # Assuming B, H, W, C
                 image_tensor = image_tensor.permute(0, 3, 1, 2)
 
         B = image_tensor.shape[0]
@@ -352,15 +357,13 @@ class StandaloneMotusPolicy:
         if self.current_t5_embedding is None:
             raise ValueError("No T5 embedding set. Call `set_t5_embedding` before running inference.")
 
-        current_frame_batch = self.obs_cache[-1] # [B, C, H, W]
+        current_frame_batch = self.obs_cache[-1]  # [B, C, H, W]
         B = current_frame_batch.shape[0]
 
-        scene_prefix = ("The whole scene is in a realistic, industrial art style with three views: "
-                        "a fixed rear camera, a movable left arm camera, and a movable right arm camera. "
-                        "The aloha robot is currently performing the following task: ")
+        scene_prefix = ("The whole scene is in a realistic tabletop pick and place task.")
 
         # We can just construct one text string per batch item
-        full_instruction_batch = [f"{scene_prefix}Perform the task."] * B
+        full_instruction_batch = [f"{scene_prefix}"] * B
 
         # Expand precomputed T5 embedding to batch size if it is shape [1, L, D] and B > 1
         t5_emb = self.current_t5_embedding
@@ -382,17 +385,20 @@ class StandaloneMotusPolicy:
         with torch.no_grad():
             predicted_frames, predicted_actions = self.model.inference_step(
                 first_frame=current_frame_batch,
-                state=self.current_state,
+                state=self.current_state_norm if self.current_state_norm is not None else self.current_state,
                 num_inference_steps=num_inference_steps,
                 language_embeddings=t5_list,
                 vlm_inputs=vlm_inputs_list,
             )
 
+        # Denormalize actions to real-world scale
+        predicted_actions = self._denormalize_actions(predicted_actions)
+
         # predicted_actions is shape [B, chunk_size, action_dim]
-        actions_real = predicted_actions.cpu().numpy() # [B, chunk_size, action_dim]
+        actions_real = predicted_actions.cpu().numpy()  # [B, chunk_size, action_dim]
 
         # Keep only the first `execute_steps` actions
-        kept_actions = actions_real[:, :self.execute_steps, :] # [B, execute_steps, action_dim]
+        kept_actions = actions_real[:, :self.execute_steps, :]  # [B, execute_steps, action_dim]
 
         logger.info(f"Generated {actions_real.shape[1]} actions per env. Keeping first {kept_actions.shape[1]}.")
 
@@ -429,10 +435,10 @@ def verify():
             stat_path=os.path.join(CURRENT_DIR, "utils", "stat.json")
         )
 
-        B = 2 # Test with batch of 2
+        B = 2  # Test with batch of 2
 
         # Test 1: Mock T5 Embedding [B, 512, 4096]
-        dummy_t5 = torch.randn((B, 512, 4096), dtype=torch.bfloat16) # dummy umt5-xxl
+        dummy_t5 = torch.randn((B, 512, 4096), dtype=torch.bfloat16)  # dummy umt5-xxl
         dummy_t5_path = "dummy_t5.pt"
         torch.save(dummy_t5, dummy_t5_path)
         policy.set_t5_embedding(dummy_t5_path)
@@ -456,6 +462,7 @@ def verify():
         print(f"Verification could not complete because model files are missing or inaccessible: {e}")
         import traceback
         traceback.print_exc()
+
 
 if __name__ == "__main__":
     verify()
