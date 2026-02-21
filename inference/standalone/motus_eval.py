@@ -12,8 +12,6 @@ import time
 os.environ["SVT_LOG"] = "0"
 import datasets
 import torch
-import numpy as np
-import cv2
 from omegaconf import OmegaConf
 
 datasets.disable_progress_bar()
@@ -28,6 +26,7 @@ from vla_align.utils.lerobot import obs_state_key, obs_image_prefix
 # Import StandaloneMotusPolicy
 import sys
 from pathlib import Path
+
 CURRENT_DIR = Path(__file__).resolve().parent
 if str(CURRENT_DIR) not in sys.path:
     sys.path.append(str(CURRENT_DIR))
@@ -97,9 +96,9 @@ def main():
     if args.aggregate_only:
         aggregate_results(args.result_dir)
         return
-        
+
     os.makedirs(args.result_dir, exist_ok=True)
-    
+
     kwargs = {}
     if args.config:
         if not os.path.exists(args.config):
@@ -121,7 +120,7 @@ def main():
             global_downsample_rate=config.common.global_downsample_rate,
             video_action_freq_ratio=config.common.video_action_freq_ratio,
             num_video_frames=config.common.num_video_frames,
-            batch_size=args.num_env, # Ensures backbone scales dimensionally matching num_envs
+            batch_size=args.num_env,  # Ensures backbone scales dimensionally matching num_envs
             video_loss_weight=config.model.loss_weights.video_loss_weight,
             action_loss_weight=config.model.loss_weights.action_loss_weight,
         ))
@@ -160,38 +159,38 @@ def main():
             # Look up T5 embeddings for this task. 
             # We assume batch size = num_env (12) and collect embeddings from episode_000000 to episode_000011.
             t5_embeddings = []
-            text_len = 512 # Standard Motus sequence padding length
-            
+            text_len = 512  # Standard Motus sequence padding length
+
             for ep_idx in range(args.num_env):
                 t5_path = os.path.join(
-                    args.dataset_root, f"{cfg_name}_{split}", 
+                    args.dataset_root, f"{cfg_name}_{split}",
                     "lerobot_data", "t5_embedding", f"episode_{ep_idx:06d}.pt"
                 )
                 if not os.path.exists(t5_path):
                     # Fallback. It might not have test split if we are using train split generated T5
                     t5_path = os.path.join(
-                        args.dataset_root, f"{cfg_name}_train", 
+                        args.dataset_root, f"{cfg_name}_train",
                         "lerobot_data", "t5_embedding", f"episode_{ep_idx:06d}.pt"
                     )
-                
+
                 if os.path.exists(t5_path):
                     emb = torch.load(t5_path, map_location="cpu")
                     if isinstance(emb, list):
-                        emb = emb[0] # Taking first sentence embedding if list
-                    
+                        emb = emb[0]  # Taking first sentence embedding if list
+
                     if not isinstance(emb, torch.Tensor):
                         emb = torch.tensor(emb)
-                    
+
                     # Ensure dim [Seq, Dim]
                     if emb.ndim == 3:
                         emb = emb.squeeze(0)
-                        
+
                     # Apply identical padding as _process_language_embeddings_batch from dataset.py
                     if emb.shape[0] <= text_len:
                         emb = torch.cat([emb, emb.new_zeros(text_len - emb.shape[0], emb.shape[1])])
                     else:
                         emb = emb[:text_len]
-                        
+
                     t5_embeddings.append(emb)
                 else:
                     print(f"WARNING: No T5 embedding found at {t5_path}")
@@ -200,7 +199,7 @@ def main():
                         t5_embeddings.append(t5_embeddings[0].clone())
 
             if len(t5_embeddings) == args.num_env:
-                stacked_t5 = torch.stack(t5_embeddings, dim=0) # [12, 512, dim]
+                stacked_t5 = torch.stack(t5_embeddings, dim=0)  # [12, 512, dim]
                 policy.current_t5_embedding = stacked_t5.float()
                 print(f"Loaded {args.num_env} T5 embeddings for {cfg_name}")
             else:
@@ -230,9 +229,10 @@ def main():
                 state = obs[obs_state_key].cpu().numpy() if torch.is_tensor(obs[obs_state_key]) else obs[obs_state_key]
 
                 # Run inference
-                action_to_take = policy.act(batched_images, state)
+                action_to_take = policy.act(batched_images, state, obs["task"])
                 # Ensure action matches torch tensor expected by the environment
-                action_to_take = torch.from_numpy(action_to_take).float().to("cuda" if torch.cuda.is_available() else "cpu")
+                action_to_take = torch.from_numpy(action_to_take).float().to(
+                    "cuda" if torch.cuda.is_available() else "cpu")
                 return action_to_take, action_to_take, dict(use_expert_action=0)
 
             print("\n" + "=" * 60)
@@ -264,6 +264,7 @@ def main():
         aggregate_results(args.result_dir)
 
     print("Done.")
+
 
 if __name__ == "__main__":
     main()

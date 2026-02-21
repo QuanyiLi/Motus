@@ -337,13 +337,14 @@ class StandaloneMotusPolicy:
             vlm_inputs['image_grid_thw'] = vlm_inputs['image_grid_thw'].to(self.device)
         return vlm_inputs
 
-    def act(self, image: np.ndarray, state: np.ndarray) -> np.ndarray:
+    def act(self, image: np.ndarray, state: np.ndarray, task_instruction) -> np.ndarray:
         """
         Main entry point for external environments.
         Updates observation and returns a batch of actions.
         Returns: [B, action_dim] array 
         """
         self.update_obs(image, state)
+        self.current_task_instruction = task_instruction
 
         if len(self.action_queue) == 0:
             logger.info("Action queue empty. Replanning...")
@@ -360,10 +361,8 @@ class StandaloneMotusPolicy:
         current_frame_batch = self.obs_cache[-1]  # [B, C, H, W]
         B = current_frame_batch.shape[0]
 
-        scene_prefix = ("") # align with the training time
-
-        # We can just construct one text string per batch item
-        full_instruction_batch = [f"{scene_prefix}"] * B
+        # Use the optionally provided task instruction, or fallback to empty string
+        full_instruction_batch = self.current_task_instruction
 
         # Expand precomputed T5 embedding to batch size if it is shape [1, L, D] and B > 1
         t5_emb = self.current_t5_embedding
@@ -448,12 +447,12 @@ def verify():
         dummy_state = np.zeros((B, 9), dtype=np.float32)
 
         print(f"Requesting first action (should trigger replan) with Batch {B}...")
-        action1 = policy.act(dummy_image, dummy_state)
+        action1 = policy.act(dummy_image, dummy_state, task_instruction=["Perform the task"])
         print(f"Action 1 shape: {action1.shape} (Expected: ({B}, 8))")
         print(f"Queue size after action 1: {len(policy.action_queue)}")
 
         print("Requesting second action (should pop from queue)...")
-        action2 = policy.act(dummy_image, dummy_state)
+        action2 = policy.act(dummy_image, dummy_state, task_instruction=["Perform the task"])
         print(f"Action 2 shape: {action2.shape} (Expected: ({B}, 8))")
         print(f"Queue size after action 2: {len(policy.action_queue)}")
 
