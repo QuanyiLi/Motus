@@ -4,7 +4,7 @@
 #SBATCH --partition=h100
 #SBATCH --qos=vita
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=16
+#SBATCH --cpus-per-task=32
 #SBATCH --gpus-per-node=1
 #SBATCH --nodes=1
 #SBATCH --time=1:00:00
@@ -20,7 +20,8 @@ srun --ntasks=1 --ntasks-per-node=1 bash -c '
 
     python '"$SCRIPT_PATH"' \
         --config '"$CONFIG_FILE"' \
-        --split train
+        --split train \
+        --checkpoint "/work/vita/lanfeng/vlas/Motus/ckpt_original_wan/wise_dataset/motus_wise_dataset/checkpoint_step_5000/pytorch_model/mp_rank_00_model_states.pt"
 '
 
 echo "Evaluation complete."
