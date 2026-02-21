@@ -126,24 +126,46 @@ def main():
                 shutil.rmtree(subset_result_dir)
             os.makedirs(subset_result_dir)
 
-            # Look up T5 embedding for this task (assuming episode_000000.pt has it)
-            # T5 embeddings are identical per task config.
-            t5_path = os.path.join(
-                args.dataset_root, f"{cfg_name}_{split}", 
-                "lerobot_data", "t5_embedding", "episode_000000.pt"
-            )
-            if not os.path.exists(t5_path):
-                # Fallback. It might not have test split if we are using train split generated T5
+            # Look up T5 embeddings for this task. 
+            # We assume batch size = num_env (12) and collect embeddings from episode_000000 to episode_000011.
+            t5_embeddings = []
+            for ep_idx in range(args.num_env):
                 t5_path = os.path.join(
-                    args.dataset_root, f"{cfg_name}_train", 
-                    "lerobot_data", "t5_embedding", "episode_000000.pt"
+                    args.dataset_root, f"{cfg_name}_{split}", 
+                    "lerobot_data", "t5_embedding", f"episode_{ep_idx:06d}.pt"
                 )
-            
-            if os.path.exists(t5_path):
-                policy.set_t5_embedding(t5_path)
-                print(f"Loaded T5 embedding from {t5_path}")
+                if not os.path.exists(t5_path):
+                    # Fallback. It might not have test split if we are using train split generated T5
+                    t5_path = os.path.join(
+                        args.dataset_root, f"{cfg_name}_train", 
+                        "lerobot_data", "t5_embedding", f"episode_{ep_idx:06d}.pt"
+                    )
+                
+                if os.path.exists(t5_path):
+                    emb = torch.load(t5_path, map_location="cpu")
+                    if isinstance(emb, list):
+                        emb = emb[0] # Taking first sentence embedding if list
+                    
+                    if not isinstance(emb, torch.Tensor):
+                        emb = torch.tensor(emb)
+                    
+                    # Ensure dim [Seq, Dim]
+                    if emb.ndim == 3:
+                        emb = emb.squeeze(0)
+                        
+                    t5_embeddings.append(emb)
+                else:
+                    print(f"WARNING: No T5 embedding found at {t5_path}")
+                    # Fallback to the first collected embedding if one is missing but we have others
+                    if len(t5_embeddings) > 0:
+                        t5_embeddings.append(t5_embeddings[0].clone())
+
+            if len(t5_embeddings) == args.num_env:
+                stacked_t5 = torch.stack(t5_embeddings, dim=0) # [12, seq_len, dim]
+                policy.current_t5_embedding = stacked_t5.float()
+                print(f"Loaded {args.num_env} T5 embeddings for {cfg_name}")
             else:
-                print(f"WARNING: No T5 embedding found at {t5_path}. Motus might fail to replan.")
+                print(f"WARNING: Failed to load all {args.num_env} T5 embeddings. Motus might fail to replan.")
 
             # Reset policy queues at the start of each new config evaluation
             policy.reset()
