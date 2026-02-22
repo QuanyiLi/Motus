@@ -112,7 +112,7 @@ system:
   
   # Intervals
   log_interval: 1       # Log every N steps
-  save_interval: 2000    # Save every N steps
+  save_interval: 5000    # Save every N steps
   val_interval: 500     # Validate every N steps
   
   # Hardware settings
