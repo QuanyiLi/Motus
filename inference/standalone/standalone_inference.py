@@ -391,7 +391,7 @@ class StandaloneMotusPolicy:
             vlm_inputs_list.append(vlm_input)
 
         # The underlying model handles batch via the vlm_inputs format
-        num_inference_steps = 50
+        num_inference_steps = 10
         with torch.no_grad():
             predicted_frames, predicted_actions = self.model.inference_step(
                 first_frame=current_frame_batch,
