@@ -105,7 +105,8 @@ def main():
             raise FileNotFoundError(f"Config file not found: {args.config}")
         config = OmegaConf.load(args.config)
         kwargs.update(dict(
-            wan_path=config.model.wan.checkpoint_path if not args.wan_path else args.wan_path,
+            wan_path=config.model.wan.checkpoint_path,
+            wan_config_path=config.model.wan.config_path,
             vlm_path=config.model.vlm.checkpoint_path if not args.vlm_path else args.vlm_path,
             video_height=config.common.video_height,
             video_width=config.common.video_width,

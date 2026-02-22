@@ -45,6 +45,7 @@ class StandaloneMotusPolicy:
             checkpoint_path: str,
             wan_path: str,
             vlm_path: str,
+            wan_config_path: Optional[str] = None,
             device: str = "cuda",
             state_dim: int = 9,
             action_dim: int = 8,
@@ -57,6 +58,7 @@ class StandaloneMotusPolicy:
         self.device = device
         self.checkpoint_path = checkpoint_path
         self.wan_path = wan_path
+        self.wan_config_path = wan_config_path or wan_path
         self.vlm_path = vlm_path
         self.state_dim = state_dim
         self.action_dim = action_dim
@@ -127,7 +129,7 @@ class StandaloneMotusPolicy:
         config_args = dict(
             wan_checkpoint_path=self.wan_path,
             vae_path=vae_path,
-            wan_config_path=self.wan_path,
+            wan_config_path=self.wan_config_path,
             video_precision='bfloat16',
             vlm_checkpoint_path=self.vlm_path,
 

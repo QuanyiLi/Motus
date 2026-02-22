@@ -78,6 +78,7 @@ def main():
     # Instantiate StandaloneMotusPolicy to match exact inference loading structures
     policy = StandaloneMotusPolicy(
         checkpoint_path=args.checkpoint,
+        wan_config_path=config.model.wan.config_path,
         wan_path=config.model.wan.checkpoint_path,
         vlm_path=config.model.vlm.checkpoint_path,
         device=str(device),
