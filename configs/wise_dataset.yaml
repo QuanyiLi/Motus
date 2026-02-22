@@ -113,7 +113,7 @@ system:
   # Intervals
   log_interval: 1       # Log every N steps
   save_interval: 5000    # Save every N steps
-  val_interval: 500     # Validate every N steps
+  val_interval: 5000     # Validate every N steps
   
   # Hardware settings
   num_workers: 4         # Number of dataloader workers (0 = main process only, 4-8 recommended for speed)
@@ -144,7 +144,7 @@ logging:
 
 # Resume training settings
 resume:
-  checkpoint_path: "/work/vita/lanfeng/vlas/Motus/checkpoints/wise_dataset/motus_wise_dataset/checkpoint_step_5000"
+  checkpoint_path: "/work/vita/lanfeng/vlas/Motus/checkpoints/wise_dataset/motus_wise_dataset/checkpoint_step_10000"
   
 # Finetune settings
 finetune:

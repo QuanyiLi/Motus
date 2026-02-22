@@ -15,12 +15,9 @@
 # using 1 node with 4 GPUs (6 configs per GPU task).
 # ============================================================
 
-source ~/miniconda3/etc/profile.d/conda.sh
-conda activate motus
-
 SCRIPT_PATH="/work/vita/lanfeng/vlas/Motus/inference/standalone/motus_eval.py"
 RESULT_DIR="/work/vita/lanfeng/vlas/motus_eval_result"
-MOTUS_CKPT="/work/vita/lanfeng/vlas/Motus/checkpoints/wise_dataset/motus_wise_dataset/checkpoint_step_5000/pytorch_model"
+MOTUS_CKPT="/work/vita/lanfeng/vlas/Motus/checkpoints/wise_dataset/motus_wise_dataset/checkpoint_step_10000/pytorch_model"
 DATASET_ROOT="/work/vita/lanfeng/vlas/vla/wise_dataset/no_noise_demo_1_round"
 CONFIG_FILE="/work/vita/lanfeng/vlas/Motus/configs/wise_dataset_test_loss.yaml"
 

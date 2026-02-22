@@ -144,7 +144,7 @@ logging:
 
 # Resume training settings
 resume:
-  checkpoint_path: "/work/vita/lanfeng/vlas/Motus/checkpoints/wise_dataset/motus_wise_dataset/checkpoint_step_5000/pytorch_model"
+  checkpoint_path: "/work/vita/lanfeng/vlas/Motus/checkpoints/wise_dataset/motus_wise_dataset/checkpoint_step_10000/pytorch_model"
 
 # Finetune settings
 finetune:
