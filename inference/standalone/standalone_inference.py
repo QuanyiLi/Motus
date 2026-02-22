@@ -124,7 +124,7 @@ class StandaloneMotusPolicy:
         return model
 
     def _create_model_config(self) -> MotusConfig:
-        vae_path = os.path.join(self.wan_path, "Wan2.2_VAE.pth")
+        vae_path = os.path.join(self.wan_config_path, "Wan2.2_VAE.pth")
 
         config_args = dict(
             wan_checkpoint_path=self.wan_path,
