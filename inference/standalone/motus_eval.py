@@ -230,8 +230,9 @@ def main():
                 state = obs[obs_state_key].cpu().numpy() if torch.is_tensor(obs[obs_state_key]) else obs[obs_state_key]
 
                 # Run inference
-                t = obs["task"][:1].tolist() * 12
-                action_to_take = policy.act(batched_images, state, torch.tensor(t, device=state.device))
+                # t = obs["task"][:1].tolist() * 12
+                # torch.tensor(t, device=state.device)
+                action_to_take = policy.act(batched_images, state, obs["task"])
                 # Ensure action matches torch tensor expected by the environment
                 action_to_take = torch.from_numpy(action_to_take).float().to(
                     "cuda" if torch.cuda.is_available() else "cpu")
