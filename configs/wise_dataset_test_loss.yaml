@@ -44,7 +44,7 @@ dataset:
 model:
   wan:
     config_path: "/work/vita/lanfeng/vlas/Motus/pretrained_models/Wan2.2-TI2V-5B"
-    checkpoint_path: "/work/vita/lanfeng/vlas/Motus/pretrained_models/Wan2.2-TI2V-5B"
+    checkpoint_path: "/work/vita/lanfeng/vlas/Motus/pretrained_models/Motus_Wan2_2_5B_pretrain"
     vae_path: "/work/vita/lanfeng/vlas/Motus/pretrained_models/Wan2.2-TI2V-5B/Wan2.2_VAE.pth"
     precision: "bfloat16"
   vlm:
@@ -144,7 +144,7 @@ logging:
 
 # Resume training settings
 resume:
-  checkpoint_path: "/work/vita/lanfeng/vlas/Motus/ckpt_original_wan/wise_dataset/motus_wise_dataset/checkpoint_step_5000/pytorch_model/mp_rank_00_model_states.pt"
+  checkpoint_path: "/work/vita/lanfeng/vlas/Motus/checkpoints/wise_dataset/motus_wise_dataset/checkpoint_step_5000/pytorch_model"
 
 # Finetune settings
 finetune:
