@@ -133,7 +133,7 @@ def main():
     policy = StandaloneMotusPolicy(
         checkpoint_path=args.ckpt_path,
         device="cuda" if torch.cuda.is_available() else "cpu",
-        execute_steps=20,
+        execute_steps=60,
         stat_path=os.path.join(CURRENT_DIR, "utils", "stat.json"),
         **kwargs
     )
