@@ -5,19 +5,19 @@
 #SBATCH --qos=vita
 #SBATCH --ntasks=4
 #SBATCH --cpus-per-task=16
-#SBATCH --gpus-per-node=4
-#SBATCH --nodes=1
+#SBATCH --gpus-per-node=1
+#SBATCH --nodes=4
 #SBATCH --time=12:00:00
 #SBATCH --mem=200G
 
 # ============================================================
 # Evaluate Motus policy on all 24 subsets (train+test)
-# using 1 node with 4 GPUs (6 configs per GPU task).
+# using 4 nodes with 1 GPU each (6 configs per node).
 # ============================================================
 
 SCRIPT_PATH="/work/vita/lanfeng/vlas/Motus/inference/standalone/motus_eval.py"
 RESULT_DIR="/work/vita/lanfeng/vlas/motus_eval_result"
-MOTUS_CKPT="/work/vita/lanfeng/vlas/Motus/checkpoints/wise_dataset/motus_wise_dataset/checkpoint_step_10000/pytorch_model"
+MOTUS_CKPT="/work/vita/lanfeng/vlas/Motus/checkpoints/wise_dataset/motus_wise_dataset/checkpoint_step_15000/pytorch_model"
 DATASET_ROOT="/work/vita/lanfeng/vlas/vla/wise_dataset/no_noise_demo_1_round"
 CONFIG_FILE="/work/vita/lanfeng/vlas/Motus/configs/wise_dataset_test_loss.yaml"
 
@@ -25,13 +25,13 @@ mkdir -p $RESULT_DIR
 
 # Each srun task gets SLURM_PROCID in {0..3}.
 # Compute the subset shard: 6 configs per task (24 total configs).
-srun --ntasks=4 --ntasks-per-node=4 bash -c '
+srun --ntasks=4 --ntasks-per-node=1 bash -c '
     START=$((SLURM_PROCID * 6))
     END=$(((SLURM_PROCID + 1) * 6))
     echo "[Node $(hostname), PROCID=$SLURM_PROCID] Evaluating subsets $START to $((END - 1))"
 
     # Distribute standard CUDA devices so they do not overlap
-    export CUDA_VISIBLE_DEVICES=$SLURM_PROCID
+    export CUDA_VISIBLE_DEVICES=0
 
     python '"$SCRIPT_PATH"' \
         --config='"$CONFIG_FILE"' \
